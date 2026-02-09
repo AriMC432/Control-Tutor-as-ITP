@@ -1,0 +1,109 @@
+@extends('layouts.app')
+
+@section('title', 'Mi Perfil')
+
+{{-- Incluimos el subnav del Jefe --}}
+@include('jefe._subnav')
+
+@section('content')
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10">
+
+            {{-- Tarjeta de Contenedor Principal --}}
+            <div class="card p-4 text-start shadow-sm border-0">
+                <h5 class="fw-semibold mb-2">Mi Perfil</h5>
+                <p class="text-muted">Consulta tus datos registrados y actualiza tu contraseña.</p>
+                <hr>
+
+                {{-- Mensajes de Feedback --}}
+                @if(session('success'))
+                    <div class="alert alert-success d-flex align-items-center shadow-sm" role="alert">
+                        <i class="bi bi-check-circle-fill me-2 lead"></i>
+                        <div>{{ session('success') }}</div>
+                    </div>
+                @endif
+                @if($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                {{-- SECCIÓN 1: DATOS DE PERFIL (Vista de Solo Lectura) --}}
+                <h6 class="text-uppercase text-primary fw-bold mt-3 mb-3">Datos del Usuario</h6>
+                <div class="row g-3 mb-5">
+                    
+                    {{-- Nombre Completo --}}
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Nombre Completo</label>
+                        <input type="text" class="form-control" 
+                            value="{{ $usuario->nombre }} {{ $usuario->paterno }} {{ $usuario->materno }}" readonly>
+                    </div>
+
+                    {{-- Número de Control/Empleado --}}
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Número de Control/Empleado</label>
+                        <input type="text" class="form-control" value="{{ $usuario->num_control }}" readonly>
+                    </div>
+
+                    {{-- Correo --}}
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Correo</label>
+                        <input type="email" class="form-control" value="{{ $usuario->correo }}" readonly>
+                    </div>
+
+                    {{-- Rol (Equivalente al campo 'Grupo' en la vista de Alumno) --}}
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Rol en el Sistema</label>
+                        <input type="text" class="form-control" value="{{ $usuario->rol->nombre ?? 'N/A' }}" readonly>
+                    </div>
+                </div>
+
+                <hr>
+
+                {{-- SECCIÓN 2: CAMBIO DE CONTRASEÑA --}}
+                <h6 class="text-uppercase text-secondary fw-bold mt-4 mb-3">Seguridad y Acceso</h6>
+                
+                <form action="{{ route('jefe.perfil.update_password') }}" method="POST">
+                    @csrf
+                    
+                    <div class="row g-3">
+                        {{-- Contraseña Actual --}}
+                        <div class="col-12 mb-3">
+                            <label for="current_password" class="form-label">Contraseña Actual <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control @error('current_password') is-invalid @enderror" id="current_password" name="current_password" required>
+                            @error('current_password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        
+                        {{-- Nueva Contraseña --}}
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">Nueva Contraseña <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required>
+                            @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        
+                        {{-- Confirmar Nueva Contraseña --}}
+                        <div class="col-md-6">
+                            <label for="password_confirmation" class="form-label">Confirmar Nueva Contraseña <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="submit" class="btn btn-primary px-5 fw-semibold">
+                            <i class="bi bi-key-fill me-2"></i> Actualizar Contraseña
+                        </button>
+                    </div>
+                </form>
+
+            </div> {{-- Fin Card --}}
+        </div>
+    </div>
+</div>
+
+@endsection
