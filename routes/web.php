@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use WhichBrowser\Parser;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\DocenteController;
 use App\Http\Controllers\JefeController;
@@ -127,4 +128,26 @@ Route::middleware(['auth.custom'])->group(function () {
     Route::post('/Soporte-Periodos/guardar', [SoporteController::class, 'storePeriodo'])->name('soporte.guardar_periodo');
 });
 
+// RUTA PARA WHICHBROWSER DE PRUEBA - BORRAR
+
+Route::get('/test-browser', function() {
+    $userAgent = request()->header('User-Agent');
+    
+    if (!$userAgent) {
+        return "No se detectó User-Agent";
+    }
+    
+    $result = new WhichBrowser\Parser($userAgent);
+    
+    return [
+        'user_agent' => substr($userAgent, 0, 100) . '...',
+        'navegador' => $result->browser->toString() ?: 'Desconocido',
+        'version' => $result->browser->version ?: 'Desconocido',
+        'sistema_operativo' => $result->os->toString() ?: 'Desconocido',
+        'dispositivo' => $result->device->type ?: 'Desconocido',
+        'fabricante' => $result->device->manufacturer ?: 'Desconocido',
+        'modelo' => $result->device->model ?: 'Desconocido',
+        'es_bot' => $result->device->type === 'bot' ? 'Sí' : 'No'
+    ];
+   });
 });

@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Docente extends Authenticatable
 {
-    use HasFactory;
+     use HasFactory, HasApiTokens;
 
     // Nombre exacto de la tabla en tu base de datos
     protected $table = 'docente'; 
