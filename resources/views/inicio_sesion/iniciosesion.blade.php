@@ -4,41 +4,102 @@
 
 @section('content')
 <style>
-  :root { --auth-primary-color: #0d6efd; }
+  :root {
+    --auth-primary-color: #0d6efd;
+  }
+
   .auth-bg {
     min-height: 100vh;
-    background: radial-gradient(1200px 600px at -10% -10%, rgba(14,165,233,.12), transparent 60%),
-                radial-gradient(1200px 600px at 110% 110%, rgba(168,85,247,.12), transparent 60%),
-                linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    background: radial-gradient(1200px 600px at -10% -10%, rgba(14, 165, 233, .12), transparent 60%),
+      radial-gradient(1200px 600px at 110% 110%, rgba(168, 85, 247, .12), transparent 60%),
+      linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   }
+
   .auth-card {
-    background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
   }
+
   .auth-brand {
-    display: flex; flex-direction: column; align-items: center; text-align: center;
-    gap: 1rem; margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
   }
+
   .auth-badge {
-    display: flex; align-items: center; justify-content: center; width: 56px; height: 56px;
-    background-color: var(--auth-primary-color); color: #ffffff; border-radius: 12px;
-    font-size: 1.25rem; font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background-color: var(--auth-primary-color);
+    color: #ffffff;
+    border-radius: 12px;
+    font-size: 1.25rem;
+    font-weight: 600;
   }
-  .auth-title { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.25rem; color: #111827; }
-  .auth-subtitle { font-size: 1rem; color: #6b7280; }
-  .form-control, .input-group .btn {
-    border-radius: 8px; padding-top: 0.85rem; padding-bottom: 0.85rem; border-color: #cbd5e1;
+
+  .auth-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #111827;
+  }
+
+  .auth-subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+  }
+
+  .form-control,
+  .input-group .btn {
+    border-radius: 8px;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-color: #cbd5e1;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  .form-control:focus { border-color: var(--auth-primary-color); box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15); }
-  .input-group .form-control { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-  .input-group .btn { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 0; }
-  .btn-primary {
-    background-color: var(--auth-primary-color); border-color: var(--auth-primary-color);
-    border-radius: 8px; padding: 0.85rem 1rem; font-weight: 600;
+
+  .form-control:focus {
+    border-color: var(--auth-primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
   }
-  .btn-primary:hover { background-color: #0b5ed7; border-color: #0b5ed7; }
-  .hr-soft { border: 0; height: 1px; background-image: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent); margin: 2rem 0; }
+
+  .input-group .form-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .input-group .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+  }
+
+  .btn-primary {
+    background-color: var(--auth-primary-color);
+    border-color: var(--auth-primary-color);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0b5ed7;
+  }
+
+  .hr-soft {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent);
+    margin: 2rem 0;
+  }
 </style>
 
 <div class="auth-bg d-flex justify-content-center align-items-start">
@@ -60,16 +121,16 @@
           <!--    BLOQUE DE ALERTAS DE SESIÓN (NUEVO)     -->
           <!-- ========================================== -->
           @if (session('error'))
-              <div class="alert alert-danger text-center mb-4">
-                  <i class="bi bi-exclamation-circle-fill me-1"></i> 
-                  {{ session('error') }}
-              </div>
+          <div class="alert alert-danger text-center mb-4">
+            <i class="bi bi-exclamation-circle-fill me-1"></i>
+            {{ session('error') }}
+          </div>
           @endif
 
           @if (session('success'))
-              <div class="alert alert-success text-center mb-4">
-                  {{ session('success') }}
-              </div>
+          <div class="alert alert-success text-center mb-4">
+            {{ session('success') }}
+          </div>
           @endif
           <!-- ========================================== -->
 
@@ -80,7 +141,7 @@
             @error('email') <div class="alert alert-danger mt-2">{{ $message }}</div> @enderror
             @error('password') <div class="alert alert-danger mt-2">{{ $message }}</div> @enderror
 
-            <div class="mb-3">  
+            <div class="mb-3">
               <label for="email" class="form-label fw-medium">Correo electrónico</label>
               <input type="email" name="email" id="email" class="form-control" placeholder="usuario@ejemplo.com" required autofocus>
             </div>
@@ -95,6 +156,24 @@
               </div>
             </div>
 
+            <!-- Campo de prueba del remember -->
+
+            <div class="mb-3 form-check">
+              <input type="checkbox"
+                name="remember"
+                id="remember"
+                class="form-check-input"
+                {{ old('remember') ? 'checked' : '' }}>
+              <label class="form-check-label" for="remember">
+                <strong>Mantener sesión iniciada</strong>
+                <br>
+                <small class="text-muted">
+                  (La sesión durará 30 minutos aunque cierres el navegador)
+                </small>
+              </label>
+            </div>
+
+            <!-- Fin del campo de prueba -->
             <br>
 
             <button type="submit" class="btn btn-primary w-100" id="submitBtn">Ingresar</button>
@@ -109,7 +188,7 @@
 
 @push('scripts')
 <script>
-  (function () {
+  (function() {
     const pass = document.getElementById('password');
     const btn = document.getElementById('togglePass');
     const label = document.getElementById('eyeLabel');
