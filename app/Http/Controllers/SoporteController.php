@@ -8,9 +8,10 @@ use App\Models\Generacion;
 use App\Models\Grupo;
 use App\Models\Estudiante;
 use App\Models\Docente;
-use App\Models\Periodo; 
+use App\Models\Periodo;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\Session; -- Incluir en caso de hacer perfil
 
 class SoporteController extends Controller
 {
@@ -30,16 +31,16 @@ class SoporteController extends Controller
     {
         $carreras = Carrera::all();
         $generaciones = Generacion::all();
-        
+
         // Filtro por Periodo Activo
         $periodoActual = Periodo::where('activo', 1)->first();
 
         if ($periodoActual) {
             $grupos = Grupo::where('id_periodo', $periodoActual->id_periodo)
-                           ->with(['carrera', 'generacion'])
-                           ->get();
+                ->with(['carrera', 'generacion'])
+                ->get();
         } else {
-            $grupos = collect(); 
+            $grupos = collect();
         }
 
         return view('soporte.alumnos', compact('carreras', 'generaciones', 'grupos'));
@@ -78,7 +79,7 @@ class SoporteController extends Controller
 
         $file = $request->file('archivo_csv');
         $handle = fopen($file->getPathname(), 'r');
-        
+
         $registrados = 0;
         $errores = [];
         $fila = 1;
@@ -93,62 +94,71 @@ class SoporteController extends Controller
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
                 if (count($data) < 9) {
                     $errores[] = "Fila $fila: Datos incompletos.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 $nombre = trim($data[0]);
-                if(strtolower($nombre) == 'nombre') { $fila++; continue; }
+                if (strtolower($nombre) == 'nombre') {
+                    $fila++;
+                    continue;
+                }
 
                 $paterno = trim($data[1]);
                 $materno = trim($data[2]);
                 $num_control = trim($data[3]);
                 $correo = trim($data[4]);
                 $contrasena = trim($data[5]);
-                
+
                 $nombre_grupo = trim($data[6]);
                 $nombre_carrera = trim($data[7]);
                 $texto_generacion = trim($data[8]);
 
                 if (Estudiante::where('num_control', $num_control)->exists()) {
                     $errores[] = "Fila $fila: El No. Control $num_control ya existe.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
                 if (Estudiante::where('correo', $correo)->exists()) {
                     $errores[] = "Fila $fila: El correo $correo ya existe.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 // Lógica de Grupo/Carrera/Generación
                 $grupo = Grupo::where('nombre', $nombre_grupo)->first();
                 if (!$grupo) {
                     $errores[] = "Fila $fila: El grupo '$nombre_grupo' no existe.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 $carrera = Carrera::where('nombre', $nombre_carrera)->first();
                 if (!$carrera) {
                     $errores[] = "Fila $fila: La carrera '$nombre_carrera' no existe.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 $anios = preg_split('/[^0-9]+/', $texto_generacion, -1, PREG_SPLIT_NO_EMPTY);
                 $generacion = null;
                 if (count($anios) >= 2) {
                     $generacion = Generacion::where('ano_inicio', $anios[0])
-                                            ->where('ano_fin', $anios[1])
-                                            ->first();
+                        ->where('ano_fin', $anios[1])
+                        ->first();
                 }
 
                 if (!$generacion) {
                     $errores[] = "Fila $fila: Generación no encontrada.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 // Actualizar Grupo
                 $grupo->id_carrera = $carrera->id_carrera;
                 $grupo->id_generacion = $generacion->id_generacion;
-                if($idPeriodo) {
-                    $grupo->id_periodo = $idPeriodo; 
+                if ($idPeriodo) {
+                    $grupo->id_periodo = $idPeriodo;
                 }
                 $grupo->save();
 
@@ -166,7 +176,7 @@ class SoporteController extends Controller
                 $registrados++;
                 $fila++;
             }
-            
+
             DB::commit();
 
             if (count($errores) > 0) {
@@ -176,7 +186,6 @@ class SoporteController extends Controller
 
             return redirect()->route('soporte.alumnos')
                 ->with('success', "Se importaron $registrados alumnos correctamente.");
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->route('soporte.alumnos')
@@ -210,7 +219,7 @@ class SoporteController extends Controller
         }
 
         $request->validate([
-            'nombre' => 'required|string|max:20', 
+            'nombre' => 'required|string|max:20',
             'semestre' => 'required|integer|min:1|max:14',
             'id_carrera' => 'required|exists:CARRERAS,id_carrera',
             'id_generacion' => 'required|exists:GENERACION,id_generacion',
@@ -221,8 +230,8 @@ class SoporteController extends Controller
         $grupo->semestre = $request->semestre;
         $grupo->id_carrera = $request->id_carrera;
         $grupo->id_generacion = $request->id_generacion;
-        $grupo->id_periodo = $periodoActual->id_periodo; 
-        
+        $grupo->id_periodo = $periodoActual->id_periodo;
+
         $grupo->save();
 
         return back()->with('success', 'Grupo creado exitosamente en el periodo actual.');
@@ -239,25 +248,25 @@ class SoporteController extends Controller
 
         if (!$periodoActual) {
             return view('soporte.asignar_grupos', [
-                'docentes' => [], 
-                'grupos' => [], 
+                'docentes' => [],
+                'grupos' => [],
                 'asignaciones' => []
             ])->withErrors('No hay un periodo activo.');
         }
 
-        $docentes = Docente::where('id_rol', 2)->get(); 
-        
+        $docentes = Docente::where('id_rol', 2)->get();
+
         $grupos = Grupo::where('id_periodo', $periodoActual->id_periodo)
-                       ->whereNull('id_docente')
-                       ->with('carrera')
-                       ->get();
+            ->whereNull('id_docente')
+            ->with('carrera')
+            ->get();
 
         $asignaciones = Grupo::where('id_periodo', $periodoActual->id_periodo)
-                             ->whereNotNull('id_docente')
-                             ->with(['docente', 'carrera', 'generacion']) 
-                             ->get();
+            ->whereNotNull('id_docente')
+            ->with(['docente', 'carrera', 'generacion'])
+            ->get();
 
-     
+
         return view('soporte.grupos', compact('docentes', 'grupos', 'asignaciones', 'periodoActual'));
     }
 
@@ -292,7 +301,7 @@ class SoporteController extends Controller
     public function alta_periodo()
     {
         $periodos = Periodo::orderBy('fecha_inicio', 'desc')->get();
-        
+
         return view('soporte.periodos', compact('periodos'));
     }
 
@@ -317,4 +326,9 @@ class SoporteController extends Controller
 
         return back()->with('success', 'Nuevo periodo creado y activado.');
     }
+
+    // Formulario para editar foto -- SOPORTE
+    // Actualizar foto perfil -- SOPORTE
+    // Eliminar foto perfil -- SOPORTE
+
 }

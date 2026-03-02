@@ -26,7 +26,7 @@ class AuthController extends Controller
         ]);
 
         // Agregamos el remember 16/02 (recordar sesión)
-        $remember = $request->has('remember');
+        $remember = true;
 
         // ---------------------------------------------------------
         // 1. BUSCAR EN TABLA ESTUDIANTE

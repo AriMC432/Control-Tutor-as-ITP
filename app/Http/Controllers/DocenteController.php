@@ -41,15 +41,15 @@ class DocenteController extends Controller
 
         // A. Grupos del periodo actual
         $grupos = Grupo::where('id_docente', $idDocente)
-                       ->where('id_periodo', $periodoActual->id_periodo)
-                       ->with('carrera') 
-                       ->get();
+            ->where('id_periodo', $periodoActual->id_periodo)
+            ->with('carrera')
+            ->get();
 
         // B. Historial (Dashboard)
         $grupales = TutoriaGrupal::where('id_docente', $idDocente)
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
             ->get()
-            ->map(function($t) {
+            ->map(function ($t) {
                 $grupo = Grupo::find($t->id_grupo);
                 return (object)[
                     'fecha' => $t->fecha,
@@ -65,7 +65,7 @@ class DocenteController extends Controller
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
             ->with('estudiante')
             ->get()
-            ->map(function($t) {
+            ->map(function ($t) {
                 $nombreEstudiante = $t->estudiante ? $t->estudiante->nombre . ' ' . $t->estudiante->paterno : 'Alumno N/A';
                 return (object)[
                     'fecha' => $t->fecha,
@@ -97,22 +97,22 @@ class DocenteController extends Controller
                 'misTutoriasIndividuales' => []
             ])->with('error', 'No hay periodo activo.');
         }
-        
+
         $fechaInicio = $periodoActual->fecha_inicio;
         $fechaFin = $periodoActual->fecha_fin;
 
         // 1. Grupos para el select
         $gruposAsignados = Grupo::where('id_docente', $idDocente)
-                            ->where('id_periodo', $periodoActual->id_periodo)
-                            ->with(['estudiantes' => function($query) {
-                                $query->orderBy('paterno', 'asc');
-                            }, 'carrera']) 
-                            ->get();
+            ->where('id_periodo', $periodoActual->id_periodo)
+            ->with(['estudiantes' => function ($query) {
+                $query->orderBy('paterno', 'asc');
+            }, 'carrera'])
+            ->get();
 
         // 2. Listas para editar
         $misTutoriasGrupales = TutoriaGrupal::where('id_docente', $idDocente)
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->with(['grupo.estudiantes' => function($q) {
+            ->with(['grupo.estudiantes' => function ($q) {
                 $q->orderBy('paterno', 'asc');
             }, 'detalles'])
             ->orderBy('fecha', 'desc')
@@ -121,7 +121,7 @@ class DocenteController extends Controller
 
         $misTutoriasIndividuales = TutoriaIndividual::where('id_docente', $idDocente)
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->with(['estudiante.grupo']) 
+            ->with(['estudiante.grupo'])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora', 'desc')
             ->get();
@@ -158,7 +158,6 @@ class DocenteController extends Controller
                 'id_docente' => $idDocente,
                 'id_grupo' => $request->grupo_id
             ]);
-
         } else {
             $request->validate([
                 'estudiante_id' => 'required|exists:ESTUDIANTE,id_estudiante',
@@ -166,7 +165,7 @@ class DocenteController extends Controller
                 'hora' => 'required',
                 'motivo' => 'required|string|max:255',
                 'observaciones' => 'nullable|string',
-                'asistencia' => 'nullable|boolean' 
+                'asistencia' => 'nullable|boolean'
             ]);
 
             $estadoAsistencia = $request->has('asistencia') ? $request->asistencia : null;
@@ -175,7 +174,7 @@ class DocenteController extends Controller
                 'fecha' => $request->fecha,
                 'hora' => $request->hora,
                 'motivo' => $request->motivo,
-                'asistencia' => $estadoAsistencia, 
+                'asistencia' => $estadoAsistencia,
                 'observaciones' => $request->observaciones ?? 'Sin observaciones registradas',
                 'id_estudiante' => $request->estudiante_id,
                 'id_docente' => $idDocente
@@ -208,9 +207,9 @@ class DocenteController extends Controller
             ]);
 
             $tutoria = TutoriaGrupal::where('id_tutoria_grupal', $request->id_tutoria)
-                                    ->where('id_docente', $idDocente)
-                                    ->firstOrFail();
-            
+                ->where('id_docente', $idDocente)
+                ->firstOrFail();
+
             $tutoria->update([
                 'fecha' => $request->fecha,
                 'hora' => $request->hora,
@@ -231,7 +230,6 @@ class DocenteController extends Controller
                     );
                 }
             }
-
         } else {
             $request->validate([
                 'id_tutoria' => 'required|exists:tutoria_individual,id_tutoria_individual',
@@ -243,8 +241,8 @@ class DocenteController extends Controller
             ]);
 
             $tutoria = TutoriaIndividual::where('id_tutoria_individual', $request->id_tutoria)
-                                        ->where('id_docente', $idDocente)
-                                        ->firstOrFail();
+                ->where('id_docente', $idDocente)
+                ->firstOrFail();
 
             $estadoAsistencia = $request->has('asistencia') ? $request->asistencia : null;
 
@@ -267,9 +265,9 @@ class DocenteController extends Controller
     {
         // 1. Buscar en Grupales
         $queryGrupal = TutoriaGrupal::where('id_docente', $idDocente)
-                                    ->where('fecha', $fecha)
-                                    ->where('hora', $hora);
-        
+            ->where('fecha', $fecha)
+            ->where('hora', $hora);
+
         // Si estamos editando una grupal, ignoramos ese ID para que no choque consigo misma
         if ($ignorarTipo === 'grupal' && $ignorarId) {
             $queryGrupal->where('id_tutoria_grupal', '!=', $ignorarId);
@@ -281,8 +279,8 @@ class DocenteController extends Controller
 
         // 2. Buscar en Individuales
         $queryIndividual = TutoriaIndividual::where('id_docente', $idDocente)
-                                            ->where('fecha', $fecha)
-                                            ->where('hora', $hora);
+            ->where('fecha', $fecha)
+            ->where('hora', $hora);
 
         if ($ignorarTipo === 'individual' && $ignorarId) {
             $queryIndividual->where('id_tutoria_individual', '!=', $ignorarId);
@@ -315,12 +313,12 @@ class DocenteController extends Controller
         $fechaFin = $periodoActual->fecha_fin;
 
         $tutoriasRaw = TutoriaIndividual::where('id_docente', $idDocente)
-                             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-                             ->with('estudiante')
-                             ->orderBy('fecha', 'desc')
-                             ->get();
+            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->with('estudiante')
+            ->orderBy('fecha', 'desc')
+            ->get();
 
-        $listaTutorias = $tutoriasRaw->map(function($t) {
+        $listaTutorias = $tutoriasRaw->map(function ($t) {
             $nombreEst = $t->estudiante ? ($t->estudiante->nombre . ' ' . $t->estudiante->paterno) : 'Estudiante desconocido';
             $horaFormat = $t->hora ? \Carbon\Carbon::parse($t->hora)->format('H:i') : '';
             return (object)[
@@ -331,13 +329,13 @@ class DocenteController extends Controller
 
         $areasCanalizacion = AreaCanalizacion::all();
 
-        $historialCanalizaciones = Canalizacion::whereHas('tutoria', function($query) use ($idDocente) {
-                                        $query->where('id_docente', $idDocente);
-                                    })
-                                     ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-                                     ->with(['tutoria.estudiante', 'area'])
-                                     ->orderBy('fecha', 'desc')
-                                     ->get();
+        $historialCanalizaciones = Canalizacion::whereHas('tutoria', function ($query) use ($idDocente) {
+            $query->where('id_docente', $idDocente);
+        })
+            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->with(['tutoria.estudiante', 'area'])
+            ->orderBy('fecha', 'desc')
+            ->get();
 
         return view('docente.canalizaciones', compact('listaTutorias', 'areasCanalizacion', 'historialCanalizaciones'));
     }
@@ -376,7 +374,7 @@ class DocenteController extends Controller
         ]);
 
         $canalizacion = Canalizacion::findOrFail($id);
-        
+
         $canalizacion->update([
             'id_area' => $request->area_id,
             'observaciones' => $request->observaciones,
@@ -408,7 +406,7 @@ class DocenteController extends Controller
                     $fail('La contraseña actual ingresada no es correcta.');
                 }
             }],
-            'password' => 'required|string|min:6|confirmed', 
+            'password' => 'required|string|min:6|confirmed',
         ], [
             'current_password.required' => 'Debes ingresar tu contraseña actual.',
             'password.confirmed' => 'La confirmación no coincide.',
@@ -418,5 +416,70 @@ class DocenteController extends Controller
         $usuario->save();
 
         return back()->with('success', 'Contraseña actualizada exitosamente.');
+    }
+
+    // Formulario para editar foto -- DOCENTE
+    public function editarFoto()
+    {
+        $userId = Session::get('user_id');
+        $usuario = Docente::findOrFail($userId);
+
+        return view('docente.editar-foto', compact('usuario'));
+    }
+
+    // editar foto -- DOCENTE
+    public function actualizarFoto(Request $request)
+    {
+        $userId = Session::get('user_id');
+        $usuario = Docente::findOrFail($userId);
+
+       $request->validate([
+            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ], [
+            'foto.required' => 'Debes seleccionar una imagen.',
+            'foto.image' => 'El archivo debe ser una imagen.',
+            'foto.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg o gif.',
+            'foto.max' => 'La imagen no debe pesar más de 2MB.',
+        ]);
+
+        if ($request->hasFile('foto')) {
+            // Eliminar foto anterior
+            if ($usuario->foto && file_exists(storage_path('app/public/fotos/docentes/' . $usuario->foto))) {
+                unlink(storage_path('app/public/fotos/docentes/' . $usuario->foto));
+            }
+
+            // Guardar nueva foto
+            $extension = $request->file('foto')->getClientOriginalExtension();
+            $nombreArchivo = $usuario->num_control . '.' . $extension;
+            $path = $request->file('foto')->storeAs('fotos/docentes', $nombreArchivo, 'public');
+
+            $usuario->foto = $nombreArchivo;
+            $usuario->save();
+
+            return redirect()->route('docente.perfil.view')->with('success', 'Foto actualizada correctamente.');
+        }
+
+        return back()->with('error', 'No se pudo subir la foto.');
+    }
+
+    // Eliminar foto -- DOCENTE
+    public function eliminarFoto()
+    {
+        $userId = Session::get('user_id');
+        $usuario = Docente::findOrFail($userId);
+
+        if ($usuario->foto) {
+            $rutaArchivo = storage_path('app/public/fotos/docentes/' . $usuario->foto);
+            if (file_exists($rutaArchivo)) {
+                unlink($rutaArchivo);
+            }
+
+            $usuario->foto = null;
+            $usuario->save();
+
+            return redirect()->route('docente.perfil.view')->with('success', 'Foto eliminada correctamente.');
+        }
+
+        return back()->with('error', 'No hay foto para eliminar.');
     }
 }

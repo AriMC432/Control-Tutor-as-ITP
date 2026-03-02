@@ -156,24 +156,6 @@
               </div>
             </div>
 
-            <!-- Campo de prueba del remember -->
-
-            <div class="mb-3 form-check">
-              <input type="checkbox"
-                name="remember"
-                id="remember"
-                class="form-check-input"
-                {{ old('remember') ? 'checked' : '' }}>
-              <label class="form-check-label" for="remember">
-                <strong>Mantener sesión iniciada</strong>
-                <br>
-                <small class="text-muted">
-                  (La sesión durará 30 minutos aunque cierres el navegador)
-                </small>
-              </label>
-            </div>
-
-            <!-- Fin del campo de prueba -->
             <br>
 
             <button type="submit" class="btn btn-primary w-100" id="submitBtn">Ingresar</button>

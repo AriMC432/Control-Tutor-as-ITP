@@ -9,7 +9,7 @@ use App\Models\Grupo;
 use App\Models\Estudiante;
 use App\Models\Docente;
 use App\Models\Rol;
-use App\Models\Periodo; 
+use App\Models\Periodo;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -29,15 +29,15 @@ class JefeController extends Controller
     {
         $carreras = Carrera::all();
         $generaciones = Generacion::all();
-        
+
         $periodoActual = Periodo::where('activo', 1)->first();
 
         if ($periodoActual) {
             $grupos = Grupo::where('id_periodo', $periodoActual->id_periodo)
-                           ->with(['carrera', 'generacion'])
-                           ->get();
+                ->with(['carrera', 'generacion'])
+                ->get();
         } else {
-            $grupos = collect(); 
+            $grupos = collect();
         }
 
         return view('jefe.alumnos', compact('carreras', 'generaciones', 'grupos'));
@@ -74,7 +74,7 @@ class JefeController extends Controller
 
         $file = $request->file('archivo_csv');
         $handle = fopen($file->getPathname(), 'r');
-        
+
         $registrados = 0;
         $errores = [];
         $fila = 1;
@@ -88,11 +88,15 @@ class JefeController extends Controller
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
                 if (count($data) < 9) {
                     $errores[] = "Fila $fila: Datos incompletos.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 $nombre = trim($data[0]);
-                if(strtolower($nombre) == 'nombre') { $fila++; continue; }
+                if (strtolower($nombre) == 'nombre') {
+                    $fila++;
+                    continue;
+                }
 
                 $paterno = trim($data[1]);
                 $materno = trim($data[2]);
@@ -105,23 +109,27 @@ class JefeController extends Controller
 
                 if (Estudiante::where('num_control', $num_control)->exists()) {
                     $errores[] = "Fila $fila: El No. Control $num_control ya existe.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
                 if (Estudiante::where('correo', $correo)->exists()) {
                     $errores[] = "Fila $fila: El correo $correo ya existe.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 $grupo = Grupo::where('nombre', $nombre_grupo)->first();
                 if (!$grupo) {
                     $errores[] = "Fila $fila: El grupo '$nombre_grupo' no existe.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 $carrera = Carrera::where('nombre', $nombre_carrera)->first();
                 if (!$carrera) {
                     $errores[] = "Fila $fila: La carrera '$nombre_carrera' no existe.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 $anios = preg_split('/[^0-9]+/', $texto_generacion, -1, PREG_SPLIT_NO_EMPTY);
@@ -131,12 +139,15 @@ class JefeController extends Controller
                 }
                 if (!$generacion) {
                     $errores[] = "Fila $fila: Generación no encontrada.";
-                    $fila++; continue;
+                    $fila++;
+                    continue;
                 }
 
                 $grupo->id_carrera = $carrera->id_carrera;
                 $grupo->id_generacion = $generacion->id_generacion;
-                if($idPeriodo) { $grupo->id_periodo = $idPeriodo; }
+                if ($idPeriodo) {
+                    $grupo->id_periodo = $idPeriodo;
+                }
                 $grupo->save();
 
                 Estudiante::create([
@@ -152,14 +163,13 @@ class JefeController extends Controller
                 $registrados++;
                 $fila++;
             }
-            
+
             DB::commit();
 
             if (count($errores) > 0) {
                 return redirect()->route('jefe.alumnos')->with('warning', "Importados $registrados. Errores: " . implode(' | ', $errores));
             }
             return redirect()->route('jefe.alumnos')->with('success', "Se importaron $registrados alumnos correctamente.");
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->route('jefe.alumnos')->with('error', 'Error crítico: ' . $e->getMessage());
@@ -188,7 +198,7 @@ class JefeController extends Controller
             'nombre' => 'required|string|max:100',
             'paterno' => 'required|string|max:100',
             'materno' => 'nullable|string|max:100',
-            'num_control' => 'required|string|max:20|unique:DOCENTE,num_control', 
+            'num_control' => 'required|string|max:20|unique:DOCENTE,num_control',
             'correo' => 'required|email|max:100|unique:DOCENTE,correo',
             'contrasena' => 'required|string|min:6',
             'id_rol' => 'required|exists:ROLES,id_rol',
@@ -202,7 +212,7 @@ class JefeController extends Controller
         $docente->correo = $request->correo;
         $docente->contrasena = Hash::make($request->contrasena);
         $docente->id_rol = $request->id_rol;
-        
+
         $docente->save();
 
         return back()->with('success', 'Usuario registrado exitosamente.');
@@ -231,7 +241,7 @@ class JefeController extends Controller
         }
 
         $request->validate([
-            'nombre' => 'required|string|max:20', 
+            'nombre' => 'required|string|max:20',
             'semestre' => 'required|integer|min:1|max:14',
             'id_carrera' => 'required|exists:CARRERAS,id_carrera',
             'id_generacion' => 'required|exists:GENERACION,id_generacion',
@@ -242,8 +252,8 @@ class JefeController extends Controller
         $grupo->semestre = $request->semestre;
         $grupo->id_carrera = $request->id_carrera;
         $grupo->id_generacion = $request->id_generacion;
-        $grupo->id_periodo = $periodoActual->id_periodo; 
-        
+        $grupo->id_periodo = $periodoActual->id_periodo;
+
         $grupo->save();
 
         return back()->with('success', 'Grupo creado exitosamente en el periodo actual.');
@@ -260,23 +270,23 @@ class JefeController extends Controller
 
         if (!$periodoActual) {
             return view('jefe.asignar_grupos', [
-                'docentes' => [], 
-                'grupos' => [], 
+                'docentes' => [],
+                'grupos' => [],
                 'asignaciones' => []
             ])->withErrors('No hay un periodo activo.');
         }
 
-        $docentes = Docente::where('id_rol', 2)->get(); 
-        
+        $docentes = Docente::where('id_rol', 2)->get();
+
         $grupos = Grupo::where('id_periodo', $periodoActual->id_periodo)
-                       ->whereNull('id_docente')
-                       ->with('carrera')
-                       ->get();
+            ->whereNull('id_docente')
+            ->with('carrera')
+            ->get();
 
         $asignaciones = Grupo::where('id_periodo', $periodoActual->id_periodo)
-                             ->whereNotNull('id_docente')
-                             ->with(['docente', 'carrera', 'generacion']) 
-                             ->get();
+            ->whereNotNull('id_docente')
+            ->with(['docente', 'carrera', 'generacion'])
+            ->get();
 
         return view('jefe.grupos', compact('docentes', 'grupos', 'asignaciones', 'periodoActual'));
     }
@@ -332,7 +342,7 @@ class JefeController extends Controller
 
         // Usamos una transacción para asegurar integridad
         DB::transaction(function () use ($request) {
-            
+
             // 1. Desactivamos TODOS los periodos existentes
             Periodo::query()->update(['activo' => 0]);
 
@@ -371,12 +381,79 @@ class JefeController extends Controller
                     $fail('La contraseña actual no es correcta.');
                 }
             }],
-            'password' => 'required|string|min:6|confirmed', 
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         $usuario->contrasena = Hash::make($request->password);
         $usuario->save();
 
         return back()->with('success', 'Contraseña actualizada exitosamente.');
+    }
+
+    // Editar foto -- JEFE
+
+    public function editarFoto()
+    {
+        $userId = Session::get('user_id');
+        $usuario = Docente::findOrFail($userId);
+
+        return view('jefe.editar-foto', compact('usuario'));
+    }
+
+    // Actualizar foto de perfil -- JEFE
+
+    public function actualizarFoto(Request $request)
+    {
+        $userId = Session::get('user_id');
+        $usuario  = Docente::findOrFail($userId);
+
+        $request->validate([
+            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ], [
+            'foto.required' => 'Debes seleccionar una imagen.',
+            'foto.image' => 'El archivo debe ser una imagen.',
+            'foto.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg o gif.',
+            'foto.max' => 'La imagen no debe pesar más de 2MB.',
+        ]);
+
+        if ($request->hasFile('foto')) {
+            // Eliminar foto anterior
+            if ($usuario->foto && file_exists(storage_path('app/public/fotos/docentes/' . $usuario->foto))) {
+                unlink(storage_path('app/public/fotos/docentes/' . $usuario->foto));
+            }
+
+            // Guardar nueva foto
+            $extension = $request->file('foto')->getClientOriginalExtension();
+            $nombreArchivo = $usuario->num_control . '.' . $extension;
+            $path = $request->file('foto')->storeAs('fotos/docentes', $nombreArchivo, 'public');
+
+            $usuario->foto = $nombreArchivo;
+            $usuario->save();
+
+            return redirect()->route('jefe.perfil.view')->with('success', 'Foto actualizada correctamente.');
+        }
+
+        return back()->with('error', 'No se pudo subir la foto.');
+    }
+
+    //  Eliminar foto de perfil -- JEFE
+    public function eliminarFoto()
+    {
+        $userId = Session::get('user_id');
+        $usuario = Docente::findOrFail($userId);
+
+        if ($usuario->foto) {
+            $rutaArchivo = storage_path('app/public/fotos/docentes/' . $usuario->foto);
+            if (file_exists($rutaArchivo)) {
+                unlink($rutaArchivo);
+            }
+
+            $usuario->foto = null;
+            $usuario->save();
+
+            return redirect()->route('jefe.perfil.view')->with('success', 'Foto eliminada correctamente.');
+        }
+
+        return back()->with('error', 'No hay foto para eliminar.');
     }
 }
