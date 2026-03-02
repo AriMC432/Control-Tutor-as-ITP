@@ -8,6 +8,10 @@
   {{-- Bootstrap (CDN) --}}
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+   {{-- Bootstrap Icons --}}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+
   <style>
     :root {
       --brand-blue: #174c9bff;
@@ -181,7 +185,52 @@
       color: #ffffff;
       box-shadow: inset 0 -3px 0 #00c4ff;
     }
-  </style>
+
+/* Contenedor de la foto */
+.foto-container {
+    position: relative;
+    width: fit-content;
+    margin: 0 auto; /* Centrar */
+}
+
+/* Imagen de perfil */
+.profile-img {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: block;
+}
+
+/* Botón de editar (lápiz) */
+.btn-edit-foto {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: white;
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+.btn-edit-foto:hover {
+    background-color: #0b5ed7;
+    transform: scale(1.1);
+    color: white;
+
+}
+</style>
 </head>
 
 <body>

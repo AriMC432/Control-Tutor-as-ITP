@@ -56,4 +56,22 @@ class Estudiante extends Authenticatable
     {
         return $this->hasMany(TutoriaIndividual::class, 'id_estudiante', 'id_estudiante');
     }
+
+    // Obtener la url de la foto de perfil
+    public function getFotoUrlAttribute() // Geneera una url publica
+    {
+        if ($this->foto && file_exists(storage_path('app/public/fotos/estudiantes/' . $this->foto))) {
+        return asset('storage/fotos/estudiantes/' . $this->foto);
+    }
+    // Imagen por defecto si no hay foto
+     return asset('images/default-avatar.png');
+
+    }
+
+    // Obtener ruta de almacenamiento
+    public function getFotoPathAttribute()
+    {
+        return 'fotos/estudiantes/' . $this->num_control . '.' . 'jpg';
+
+    }
 }
