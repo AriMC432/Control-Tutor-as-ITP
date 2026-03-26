@@ -100,13 +100,20 @@
                                                     {{ \Carbon\Carbon::parse($periodo->fecha_inicio)->format('d/m/Y') }} <br> 
                                                     {{ \Carbon\Carbon::parse($periodo->fecha_fin)->format('d/m/Y') }}
                                                 </td>
-                                                <td class="text-end pe-4">
-                                                    @if($periodo->activo)
-                                                        <span class="badge bg-success rounded-pill px-3">ACTIVO</span>
-                                                    @else
-                                                        <span class="badge bg-secondary rounded-pill px-3">Cerrado</span>
-                                                    @endif
-                                                </td>
+                                                <td class="text-end pe-4 align-middle">
+    @if($periodo->activo == 1)
+        <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">ACTIVO</span>
+    @else
+        <form action="{{ route('periodo.activar.global') }}" method="POST" class="m-0 d-inline-block">
+            @csrf
+            <input type="hidden" name="id_periodo" value="{{ $periodo->id_periodo }}">
+            <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold shadow-sm" 
+                    onclick="return confirm('¿Deseas activar {{ $periodo->nombre }} para toda la escuela?')">
+                Activar ciclo
+            </button>
+        </form>
+    @endif
+</td>
                                             </tr>
                                         @empty
                                             <tr>

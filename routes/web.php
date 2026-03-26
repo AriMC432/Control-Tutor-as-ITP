@@ -9,7 +9,7 @@ use App\Http\Controllers\CoordinadorController;
 use App\Http\Controllers\AlumnoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SoporteController;
-
+use App\Http\Controllers\PeriodoController;
 // --- RUTAS PÚBLICAS ---
 Route::get('/', [MainController::class, 'pagina'])->name('pagina');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -172,3 +172,9 @@ Route::middleware(['auth.custom'])->group(function () {
         ];
     });
 });
+
+// RUTA PARA CAMBIAR PERIODO ACTIVO (USADA EN EL SUBNAV)
+Route::post('/cambiar-periodo', [App\Http\Controllers\PeriodoController::class, 'cambiarPeriodo'])->name('periodo.cambiar');
+Route::post('/activar-periodo', [App\Http\Controllers\PeriodoController::class, 'activarGlobal'])->name('periodo.activar.global');
+Route::post('/Jefe-Periodos/guardar', [JefeController::class, 'storePeriodo'])->name('jefe.guardar_periodo');
+Route::post('/activar-periodo', [JefeController::class, 'activarGlobal'])->name('periodo.activar.global');

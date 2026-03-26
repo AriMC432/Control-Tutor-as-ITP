@@ -12,6 +12,7 @@ use App\Models\Canalizacion;
 use App\Models\Periodo;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Validation\Rules\Password;
 
 class AlumnoController extends Controller
 {
@@ -21,6 +22,7 @@ class AlumnoController extends Controller
     public function inicioalumno()
     {
         $studentId = Session::get('user_id');
+        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
 
         if (!$studentId) {
             return redirect()->route('login')->with('error', 'Debes iniciar sesión.');
@@ -129,21 +131,21 @@ class AlumnoController extends Controller
                     'fecha' => $tg->fecha,
                     'tutor' => optional($tg->docente)->nombre . ' ' . optional($tg->docente)->paterno,
                     'estado_clase' => is_null($asistencia) ? 'warning' : ($asistencia == 1 ? 'success' : 'danger'),
-                    'estado_texto' => is_null($asistencia) ? 'Pendiente' : ($asistencia == 1 ? 'Asistió' : 'Faltó')
+                    'estado_texto' => is_null($asistencia) ? 'Pendiente' : ($asistencia == 1 ? 'Asistió' : 'Faltó'), 
                 ];
             });
 
             $tutoriasRecientes = $listaInd->concat($listaGrup)->sortByDesc('fecha')->take(5);
         }
 
-        return view('alumno.index', [
-            'nombre' => $nombre,
-            'totalTutorias' => $totalAsistidas,
-            'asistencia' => $porcentajeAsistencia,
-            'totalCanalizaciones' => $totalCanalizaciones,
-            'tutorias' => $tutoriasRecientes,
-            'periodo' => $nombrePeriodo
-        ]);
+return view('alumno.index', compact(
+    'nombre', 
+    'periodoActivo', 
+    'totalAsistidas', 
+    'porcentajeAsistencia', 
+    'totalCanalizaciones', 
+    'tutoriasRecientes'
+));
     }
 
     /**
@@ -169,20 +171,42 @@ class AlumnoController extends Controller
         $estudiante = Estudiante::findOrFail($studentId);
 
         $request->validate([
-            'current_password' => ['required', function ($attribute, $value, $fail) use ($estudiante) {
-                if (!Hash::check($value, $estudiante->contrasena)) {
-                    $fail('La contraseña actual ingresada no es correcta.');
+            'current_password' => [
+                'required',
+                function ($attribute, $value, $fail) use ($estudiante) {
+                    if (!Hash::check($value, $estudiante->contrasena)) {
+                        $fail('La contraseña actual ingresada no es correcta.');
+                    }
                 }
-            }],
-            'password' => 'required|string|min:6|confirmed',
+            ],
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->letters()      // Al menos una letra
+                    ->mixedCase()    // Mayúsculas y minúsculas
+                    ->numbers()      // Al menos un número
+                    ->symbols()      // Al menos un símbolo
+                    ->uncompromised(), // Verifica filtraciones en internet
+            ],
+        ], [
+            // --- TRADUCCIONES PARA EL ALUMNO ---
+            'password.required' => 'La nueva contraseña es obligatoria.',
+            'password.confirmed' => 'La confirmación de la contraseña no coincide.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.letters' => 'La contraseña debe contener al menos una letra.',
+            'password.mixed' => 'La contraseña debe contener mayúsculas y minúsculas.',
+            'password.numbers' => 'La contraseña debe contener al menos un número.',
+            'password.symbols' => 'La contraseña debe contener al menos un símbolo.',
+            'password.uncompromised' => 'Esta contraseña es poco segura por filtraciones externas. Intenta con otra.',
         ]);
 
         $estudiante->contrasena = Hash::make($request->password);
         $estudiante->save();
 
-        return back()->with('success', 'Contraseña actualizada exitosamente.');
+        return back()->with('success', '¡Tu contraseña ha sido actualizada con éxito!');
     }
-
     /**
      * CANALIZACIONES
      */

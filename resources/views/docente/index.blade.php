@@ -6,6 +6,20 @@
 @include('docente._subnav')
 
 @section('content')
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="background-color: #e8f0fe !important;">
+            <div class="card-body py-4">
+                <h5 class="text-secondary mb-1" style="font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                    <i class="bi bi-calendar3 me-2"></i> Ciclo Escolar Actual
+                </h5>
+                <h2 class="fw-bold mb-0" style="color: #174c9b !important;">
+                    {{ $periodoActivo ? $periodoActivo->nombre : 'Sin periodo activo' }}
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="container-fluid">
     
     {{-- Encabezado y Botón de Acción Rápida --}}
