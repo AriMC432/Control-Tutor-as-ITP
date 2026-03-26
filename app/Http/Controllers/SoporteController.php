@@ -20,7 +20,8 @@ class SoporteController extends Controller
      */
     public function inicio()
     {
-        return view('soporte.index');
+        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
+        return view('soporte.index', compact('periodoActivo'));
     }
 
     // ==========================================
@@ -247,11 +248,7 @@ class SoporteController extends Controller
         $periodoActual = Periodo::where('activo', 1)->first();
 
         if (!$periodoActual) {
-            return view('soporte.asignar_grupos', [
-                'docentes' => [],
-                'grupos' => [],
-                'asignaciones' => []
-            ])->withErrors('No hay un periodo activo.');
+            return back()->withErrors('No hay un periodo activo.');
         }
 
         $docentes = Docente::where('id_rol', 2)->get();

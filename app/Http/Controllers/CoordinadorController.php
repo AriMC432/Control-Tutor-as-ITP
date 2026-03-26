@@ -13,12 +13,14 @@ use App\Models\Canalizacion;
 use App\Models\Docente;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Validation\Rules\Password;
 
 class CoordinadorController extends Controller
 {
     public function inicio()
     {
-        return view('coordinador.index');
+        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
+        return view('coordinador.index', compact('periodoActivo'));
     }
 
     public function informes()
@@ -56,24 +58,41 @@ class CoordinadorController extends Controller
         $idUsuario = Session::get('user_id');
         $usuario = Docente::findOrFail($idUsuario);
 
-        // 1. Validación de datos
+        // 1. Validación de datos con reglas Pro
         $request->validate([
-            // Verificar que la contraseña actual sea correcta (usando el campo 'contrasena' del modelo Docente)
-            'current_password' => ['required', function ($attribute, $value, $fail) use ($usuario) {
-                if (!Hash::check($value, $usuario->contrasena)) {
-                    $fail('La contraseña actual ingresada no es correcta.');
+            'current_password' => [
+                'required',
+                function ($attribute, $value, $fail) use ($usuario) {
+                    if (!Hash::check($value, $usuario->contrasena)) {
+                        $fail('La contraseña actual ingresada no es correcta.');
+                    }
                 }
-            }],
+            ],
 
-            // Nueva contraseña: Mínimo 6 caracteres y debe coincidir con 'password_confirmation'
-            'password' => 'required|string|min:6|confirmed',
+            // Nueva contraseña: Reglas robustas
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->letters()      // Al menos una letra
+                    ->mixedCase()    // Mayúsculas y minúsculas
+                    ->numbers()      // Al menos un número
+                    ->symbols()      // Al menos un símbolo (!@#$%...)
+                    ->uncompromised(), // Verifica que no haya sido hackeada antes
+            ],
 
         ], [
-            // Mensajes de error personalizados
+            // Mensajes de error personalizados y traducidos
             'current_password.required' => 'Debes ingresar tu contraseña actual para confirmar el cambio.',
             'password.required' => 'La nueva contraseña es obligatoria.',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
             'password.confirmed' => 'La confirmación de la nueva contraseña no coincide.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.letters' => 'La contraseña debe contener al menos una letra.',
+            'password.mixed' => 'La contraseña debe contener mayúsculas y minúsculas.',
+            'password.numbers' => 'La contraseña debe contener al menos un número.',
+            'password.symbols' => 'La contraseña debe contener al menos un símbolo.',
+            'password.uncompromised' => 'Esta contraseña es poco segura porque ha aparecido en filtraciones de datos. Elige una más original.',
         ]);
 
         // 2. Actualizar la contraseña
@@ -81,7 +100,7 @@ class CoordinadorController extends Controller
         $usuario->save();
 
         // 3. Redireccionar con éxito
-        return back()->with('success', 'Contraseña actualizada exitosamente.');
+        return back()->with('success', '¡Tu contraseña se cambió correctamente!');
     }
 
     // Formulario para editar foto -- COORDINADOR

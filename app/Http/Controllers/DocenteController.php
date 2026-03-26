@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Validation\Rules\Password;
 
 // Importación de modelos
 use App\Models\Grupo;
@@ -27,7 +29,7 @@ class DocenteController extends Controller
     {
         $idDocente = Session::get('user_id');
         $periodoActual = Periodo::where('activo', 1)->first();
-
+        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
         if (!$periodoActual) {
             return view('docente.index', [
                 'grupos' => [],
@@ -79,7 +81,7 @@ class DocenteController extends Controller
 
         $tutorias = $grupales->concat($individuales)->sortByDesc('orden')->take(10);
 
-        return view('docente.index', compact('grupos', 'tutorias', 'periodoActual'));
+        return view('docente.index', compact('grupos', 'tutorias', 'periodoActual', 'periodoActivo'));
     }
 
     /**
@@ -397,27 +399,53 @@ class DocenteController extends Controller
 
     public function updatePassword(Request $request)
     {
-        $idDocente = Session::get('user_id');
-        $usuario = Docente::findOrFail($idDocente);
+        $idUsuario = Session::get('user_id');
+        $usuario = Docente::findOrFail($idUsuario);
 
+        // 1. Validación de datos con reglas de alta seguridad
         $request->validate([
-            'current_password' => ['required', function ($attribute, $value, $fail) use ($usuario) {
-                if (!Hash::check($value, $usuario->contrasena)) {
-                    $fail('La contraseña actual ingresada no es correcta.');
+            'current_password' => [
+                'required',
+                function ($attribute, $value, $fail) use ($usuario) {
+                    if (!Hash::check($value, $usuario->contrasena)) {
+                        $fail('La contraseña actual ingresada no es correcta.');
+                    }
                 }
-            }],
-            'password' => 'required|string|min:6|confirmed',
+            ],
+
+            // Nueva contraseña: Reglas robustas (8 caracteres + complejidad)
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->letters()      // Requiere al menos una letra
+                    ->mixedCase()    // Requiere mayúsculas y minúsculas
+                    ->numbers()      // Requiere al menos un número
+                    ->symbols()      // Requiere al menos un símbolo (!@#$%...)
+                    ->uncompromised(), // Verifica que no haya sido filtrada en internet
+            ],
+
         ], [
-            'current_password.required' => 'Debes ingresar tu contraseña actual.',
-            'password.confirmed' => 'La confirmación no coincide.',
+            // Mensajes de error personalizados en español
+            'current_password.required' => 'Debes ingresar tu contraseña actual para confirmar el cambio.',
+            'password.required' => 'La nueva contraseña es obligatoria.',
+            'password.confirmed' => 'La confirmación de la nueva contraseña no coincide.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.letters' => 'La contraseña debe contener al menos una letra.',
+            'password.mixed' => 'La contraseña debe contener mayúsculas y minúsculas.',
+            'password.numbers' => 'La contraseña debe contener al menos un número.',
+            'password.symbols' => 'La contraseña debe contener al menos un símbolo.',
+            'password.uncompromised' => 'Esta contraseña es poco segura por filtraciones previas. Elige otra.',
         ]);
 
+        // 2. Actualizar la contraseña con Hash
         $usuario->contrasena = Hash::make($request->password);
         $usuario->save();
 
+        // 3. Redireccionar con éxito
         return back()->with('success', 'Contraseña actualizada exitosamente.');
     }
-
     // Formulario para editar foto -- DOCENTE
     public function editarFoto()
     {

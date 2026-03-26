@@ -13,12 +13,15 @@ use App\Models\Periodo;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rules\Password;
 
 class JefeController extends Controller
 {
     public function inicio()
     {
-        return view('jefe.index');
+        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
+        return view('jefe.index', compact('periodoActivo'));
+
     }
 
     // ==========================================
@@ -269,11 +272,7 @@ class JefeController extends Controller
         $periodoActual = Periodo::where('activo', 1)->first();
 
         if (!$periodoActual) {
-            return view('jefe.asignar_grupos', [
-                'docentes' => [],
-                'grupos' => [],
-                'asignaciones' => []
-            ])->withErrors('No hay un periodo activo.');
+            return redirect()->back()->withErrors('No hay un periodo activo.');
         }
 
         $docentes = Docente::where('id_rol', 2)->get();
@@ -332,31 +331,36 @@ class JefeController extends Controller
     /**
      * Crea un nuevo periodo y lo establece como activo.
      */
-    public function storePeriodo(Request $request)
-    {
-        $request->validate([
-            'nombre' => 'required|string|max:50', // Ej: "Agosto-Diciembre 2026"
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date|after:fecha_inicio',
-        ]);
+// 1. Para crear uno nuevo (Formulario izquierdo)
+public function storePeriodo(Request $request)
+{
+    DB::table('periodo')->update(['activo' => 0]); // Apaga todos
 
-        // Usamos una transacción para asegurar integridad
-        DB::transaction(function () use ($request) {
+    $id = DB::table('periodo')->insertGetId([
+        'nombre' => $request->nombre,
+        'fecha_inicio' => $request->fecha_inicio,
+        'fecha_fin' => $request->fecha_fin,
+        'activo' => 1
+    ]);
 
-            // 1. Desactivamos TODOS los periodos existentes
-            Periodo::query()->update(['activo' => 0]);
+    session(['periodo_id' => $id, 'periodo_nombre' => $request->nombre]);
+    return redirect()->back()->with('success', 'Ciclo creado y activado.');
+}
 
-            // 2. Creamos el nuevo periodo como ACTIVO (1)
-            Periodo::create([
-                'nombre' => $request->nombre,
-                'fecha_inicio' => $request->fecha_inicio,
-                'fecha_fin' => $request->fecha_fin,
-                'activo' => 1
-            ]);
-        });
+// 2. Para activar uno del historial (Tabla derecha)
+public function activarGlobal(Request $request)
+{
+    DB::table('periodo')->update(['activo' => 0]); // Apaga todos
 
-        return back()->with('success', 'Nuevo ciclo escolar iniciado. Se ha establecido como el periodo activo.');
-    }
+    DB::table('periodo')
+        ->where('id_periodo', $request->id_periodo)
+        ->update(['activo' => 1]); // Activa el seleccionado
+
+    $p = DB::table('periodo')->where('id_periodo', $request->id_periodo)->first();
+    session(['periodo_id' => $p->id_periodo, 'periodo_nombre' => $p->nombre]);
+
+    return redirect()->back()->with('success', 'Periodo actualizado correctamente.');
+}
 
 
     // ==========================================
@@ -376,18 +380,41 @@ class JefeController extends Controller
         $usuario = Docente::findOrFail($idDocente);
 
         $request->validate([
-            'current_password' => ['required', function ($attribute, $value, $fail) use ($usuario) {
-                if (!Hash::check($value, $usuario->contrasena)) {
-                    $fail('La contraseña actual no es correcta.');
+            'current_password' => [
+                'required',
+                function ($attribute, $value, $fail) use ($usuario) {
+                    if (!Hash::check($value, $usuario->contrasena)) {
+                        $fail('La contraseña actual no es correcta.');
+                    }
                 }
-            }],
-            'password' => 'required|string|min:6|confirmed',
+            ],
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised(),
+            ],
+        ], [
+            // --- TRADUCCIÓN DE MENSAJES ---
+            'password.required' => 'La nueva contraseña es obligatoria.',
+            'password.confirmed' => 'La confirmación de la contraseña no coincide.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.letters' => 'La contraseña debe contener al menos una letra.',
+            'password.mixed' => 'La contraseña debe contener mayúsculas y minúsculas.',
+            'password.numbers' => 'La contraseña debe contener al menos un número.',
+            'password.symbols' => 'La contraseña debe contener al menos un símbolo.',
+            'password.uncompromised' => 'Esta contraseña ha aparecido en filtraciones de datos. Elige otra más segura.',
         ]);
 
         $usuario->contrasena = Hash::make($request->password);
         $usuario->save();
 
-        return back()->with('success', 'Contraseña actualizada exitosamente.');
+        return back()->with('success', '¡Contraseña actualizada correctamente!');
     }
 
     // Editar foto -- JEFE
@@ -418,7 +445,7 @@ class JefeController extends Controller
 
         if ($request->hasFile('foto')) {
             // Eliminar foto anterior
-            if ($usuario->foto && file_exists(storage_path('app/public/fotos/docentes/' . $usuario->foto))) {
+            if ($usuario->foto && file_exists(storage_path('/app/public/fotos/docentes/' . $usuario->foto))) {
                 unlink(storage_path('app/public/fotos/docentes/' . $usuario->foto));
             }
 
