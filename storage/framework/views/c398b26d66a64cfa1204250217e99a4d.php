@@ -40,7 +40,14 @@
         <a href="<?php echo e(route('jefe.periodos')); ?>" class="nav-link <?php echo e(request()->routeIs('jefe.periodos') ? 'active' : ''); ?>">
             Periodos
         </a>
-    </li>
+        </li>
+        
+        <li class="nav-item">
+            <a href="<?php echo e(route('jefe.alta_docente')); ?>"
+                class="nav-link <?php echo e(request()->routeIs('jefe.docentes.crear') ? 'active' : ''); ?>">
+                Crear Docente
+            </a>
+        </li>
 
     
     <li class="nav-item">

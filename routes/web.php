@@ -15,10 +15,8 @@ Route::get('/', [MainController::class, 'pagina'])->name('pagina');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-
-
-Route::middleware(['auth.custom'])->group(function () {
+Route::post('/periodos/activar-global', [PeriodoController::class, 'activarGlobal'])->name('periodo.activar.global');
+Route::get('/jefe/alta-docente', [JefeController::class, 'alta_docente'])->name('jefe.alta_docente');Route::middleware(['auth.custom'])->group(function () {
 
     Route::middleware(['rol:estudiante'])->group(function () {
         Route::get('/alumno', [AlumnoController::class, 'inicioalumno'])->name('alumno.index');
