@@ -15,11 +15,6 @@
     </li>
 
     
-    <li class="nav-item">
-        <a href="<?php echo e(route('jefe.usuarios')); ?>" class="nav-link <?php echo e(request()->routeIs('jefe.usuarios') ? 'active' : ''); ?>">
-            Alta de Usuarios
-        </a>
-    </li>
 
     
     <li class="nav-item">
@@ -45,7 +40,7 @@
         <li class="nav-item">
             <a href="<?php echo e(route('jefe.alta_docente')); ?>"
                 class="nav-link <?php echo e(request()->routeIs('jefe.docentes.crear') ? 'active' : ''); ?>">
-                Crear Usuario
+                Alta de Usuario
             </a>
         </li>
 
