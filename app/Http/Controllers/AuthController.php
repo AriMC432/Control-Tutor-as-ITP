@@ -149,6 +149,9 @@ class AuthController extends Controller
 
                 case 'Coordinador':
                     return redirect()->intended(route('coord.index'))->withCookie($cookie);
+                
+                case 'Coordinador Institucional':
+                    return redirect()->intended(route('coordinst.index'))->withCookie($cookie);
 
                 case 'Soporte':
                     return redirect()->intended(route('soporte.index'))->withCookie($cookie);
