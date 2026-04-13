@@ -188,7 +188,7 @@ class JefeController extends Controller
 
     public function alta_docente()
     {
-        $roles = Rol::where('nombre', '!=', 'Soporte')->get();        if (request()->routeIs('jefe.usuarios')) {
+        $roles = Rol::whereNotIn('nombre', ['Soporte', 'Coordinador Institucional'])->get();       if (request()->routeIs('jefe.usuarios')) {
             return view('jefe.docente', compact('roles'));
         }
         return view('jefe.docente', compact('roles'));

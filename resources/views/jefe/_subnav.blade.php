@@ -45,7 +45,7 @@
         <li class="nav-item">
             <a href="{{ route('jefe.alta_docente') }}"
                 class="nav-link {{ request()->routeIs('jefe.docentes.crear') ? 'active' : '' }}">
-                Crear Docente
+                Crear Usuario
             </a>
         </li>
 
