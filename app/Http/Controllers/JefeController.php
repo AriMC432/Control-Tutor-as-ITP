@@ -188,8 +188,7 @@ class JefeController extends Controller
 
     public function alta_docente()
     {
-        $roles = Rol::all();
-        if (request()->routeIs('jefe.usuarios')) {
+        $roles = Rol::where('nombre', '!=', 'Soporte')->get();        if (request()->routeIs('jefe.usuarios')) {
             return view('jefe.docente', compact('roles'));
         }
         return view('jefe.docente', compact('roles'));
@@ -348,18 +347,29 @@ public function storePeriodo(Request $request)
 }
 
 // 2. Para activar uno del historial (Tabla derecha)
+// No olvides verificar si tienes este import al inicio del archivo:
+// use App\Models\Periodo; 
+
 public function activarGlobal(Request $request)
 {
-    DB::table('periodo')->update(['activo' => 0]); // Apaga todos
+    // Validamos que el ID venga en la petición
+    $request->validate([
+        'id_periodo' => 'required|exists:periodo,id_periodo'
+    ]);
 
-    DB::table('periodo')
-        ->where('id_periodo', $request->id_periodo)
-        ->update(['activo' => 1]); // Activa el seleccionado
+    // 1. Desactivamos todos los periodos activos actualmente
+    Periodo::where('activo', 1)->update(['activo' => 0]);
 
-    $p = DB::table('periodo')->where('id_periodo', $request->id_periodo)->first();
-    session(['periodo_id' => $p->id_periodo, 'periodo_nombre' => $p->nombre]);
+    // 2. Buscamos el periodo seleccionado y lo activamos
+    $periodo = Periodo::find($request->id_periodo);
+    
+    if ($periodo) {
+        $periodo->activo = 1;
+        $periodo->save();
+        return back()->with('success', 'Período oficial actualizado a: ' . $periodo->nombre);
+    }
 
-    return redirect()->back()->with('success', 'Periodo actualizado correctamente.');
+    return back()->with('error', 'No se pudo actualizar el período.');
 }
 
 

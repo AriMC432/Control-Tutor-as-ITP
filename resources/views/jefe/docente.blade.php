@@ -9,7 +9,7 @@
   <div class="d-flex justify-content-between align-items-center">
     <div>
         <h4 class="mb-2">Alta de Usuarios</h4>
-        <div class="text-muted mb-3">Registra usuarios nuevos y define su rol</div>
+        <div class="text-muted mb-3">Registra usuarios nuevos</div>
     </div>
   </div>
   <hr>
@@ -72,7 +72,7 @@
         </select>
       </div>
       <div class="col-12 d-flex gap-2 mt-2">
-        <button class="btn btn-success" type="submit">Registrar docente</button>
+        <button class="btn btn-success" type="submit">Registrar usuario</button>
         <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
       </div>
     </div>

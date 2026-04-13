@@ -40,9 +40,16 @@
         <a href="{{ route('jefe.periodos') }}" class="nav-link {{ request()->routeIs('jefe.periodos') ? 'active' : '' }}">
             Periodos
         </a>
-    </li>
+        </li>
+        {{-- 8. Crear docente (SECCIÓN AGREGADA) --}}
+        <li class="nav-item">
+            <a href="{{ route('jefe.alta_docente') }}"
+                class="nav-link {{ request()->routeIs('jefe.docentes.crear') ? 'active' : '' }}">
+                Crear Docente
+            </a>
+        </li>
 
-    {{-- 8. MI PERFIL --}}
+    {{-- 9. MI PERFIL --}}
     <li class="nav-item">
         <a href="{{ route('jefe.perfil.view') }}" class="nav-link {{ request()->routeIs('jefe.perfil.view') ? 'active' : '' }}">
             <i class="bi bi-person-circle me-1"></i> Mi Perfil
