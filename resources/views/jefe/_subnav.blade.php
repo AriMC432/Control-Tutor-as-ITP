@@ -14,12 +14,12 @@
         </a>
     </li>
 
-    {{-- 4. ALTA DE USUARIOS --}}
+    {{-- 4. ALTA DE USUARIOS 
     <li class="nav-item">
         <a href="{{ route('jefe.usuarios') }}" class="nav-link {{ request()->routeIs('jefe.usuarios') ? 'active' : '' }}">
             Alta de Usuarios
         </a>
-    </li>
+    </li>--}}
 
     {{-- 5. ALTA DE GRUPOS (Ruta Específica) --}}
     <li class="nav-item">
@@ -45,7 +45,7 @@
         <li class="nav-item">
             <a href="{{ route('jefe.alta_docente') }}"
                 class="nav-link {{ request()->routeIs('jefe.docentes.crear') ? 'active' : '' }}">
-                Crear Usuario
+                Alta de Usuario
             </a>
         </li>
 
