@@ -178,3 +178,31 @@ Route::post('/cambiar-periodo', [App\Http\Controllers\PeriodoController::class, 
 Route::post('/activar-periodo', [App\Http\Controllers\PeriodoController::class, 'activarGlobal'])->name('periodo.activar.global');
 Route::post('/Jefe-Periodos/guardar', [JefeController::class, 'storePeriodo'])->name('jefe.guardar_periodo');
 Route::post('/activar-periodo', [JefeController::class, 'activarGlobal'])->name('periodo.activar.global');
+
+
+// RUTAS PARA COORDINADOR INSTITUCIONAL
+
+    // ==========================================
+    // RUTAS PARA COORDINADOR INSTITUCIONAL
+    // ==========================================
+    Route::middleware(['auth.custom', 'rol:Coordinador Institucional'])->group(function () {
+        
+        // Dashboard / Inicio
+        Route::get('/Coordinador-Institucional', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'index'])->name('coordinst.index');
+        
+        // Listados (solo consulta)
+        Route::get('/Coordinador-Institucional/estudiantes', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'estudiantes'])->name('coordinst.estudiantes');
+        Route::get('/Coordinador-Institucional/docentes', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'docentes'])->name('coordinst.docentes');
+        Route::get('/Coordinador-Institucional/tutorias', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'tutorias'])->name('coordinst.tutorias');
+        Route::get('/Coordinador-Institucional/canalizaciones', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'canalizaciones'])->name('coordinst.canalizaciones');
+        
+        // Perfil
+        Route::get('/Coordinador-Institucional/perfil', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'perfil'])->name('coordinst.perfil.view');
+        Route::post('/Coordinador-Institucional/perfil/actualizar-password', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'updatePassword'])->name('coordinst.perfil.update_password');
+        
+        // Foto de perfil
+        Route::get('/Coordinador-Institucional/perfil/editar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'editarFoto'])->name('coordinst.editar-foto');
+        Route::post('/Coordinador-Institucional/perfil/actualizar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'actualizarFoto'])->name('coordinst.actualizar-foto');
+        Route::post('/Coordinador-Institucional/perfil/eliminar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'eliminarFoto'])->name('coordinst.eliminar-foto');
+        
+    });
