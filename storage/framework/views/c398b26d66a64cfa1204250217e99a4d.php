@@ -45,7 +45,7 @@
         <li class="nav-item">
             <a href="<?php echo e(route('jefe.alta_docente')); ?>"
                 class="nav-link <?php echo e(request()->routeIs('jefe.docentes.crear') ? 'active' : ''); ?>">
-                Crear Docente
+                Crear Usuario
             </a>
         </li>
 
