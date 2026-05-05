@@ -72,4 +72,5 @@ class Docente extends Authenticatable
     {
         return 'fotos/docentes/' . $this->num_control;
     }
+
 }
