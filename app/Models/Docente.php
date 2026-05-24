@@ -73,4 +73,12 @@ class Docente extends Authenticatable
         return 'fotos/docentes/' . $this->num_control;
     }
 
+        /**
+     * obtener los grupos asignados a este docente
+     */
+    public function gruposAsignados()
+    {
+        return $this->hasMany(Grupo::class, 'id_docente');
+    }
+
 }

@@ -20,14 +20,43 @@ class ReporteAnexo19Controller extends Controller
     /**
      * generar reporte anexo 19 en formato pdf
      */
-    public function generate($id_grupo, $id_periodo)
+    public function generate(Request $request, $id_grupo, $id_periodo)
     {
+
         // obtener datos del docente logueado
         $idDocente = Session::get('user_id');
+        $nombreDocente = Session::get('user_name');
 
         // obtener informacion del grupo y periodo
         $grupo = Grupo::with('carrera')->findOrFail($id_grupo);
         $periodo = Periodo::findOrFail($id_periodo);
+
+        // validar fechas 
+        $request->validate([
+            'fecha_llenado' => 'required|date',
+            'fecha_entrega' => 'required|date|after_or_equal:fecha_llenado'
+        ], [
+            'fecha_llenado.required' => 'La fecha de llenado es obligatoria',
+            'fecha_entrega.required' => 'La fecha de entrega es obligatoria',
+            'fecha_entrega.after_or_equal' => 'La fecha de entrega debe ser mayor o igual a la fecha de llenado'
+        ]);
+
+        // obtener fecha de llenado desde el request 
+        $fechaLlenado = $request->fecha_llenado;
+        $fechaEntrega = $request->fecha_entrega;
+
+        // procesar firmas seleccionadas
+        $firmaCoordinador = $request->get('firma_coordinador', '');
+        $firmaJefe = $request->get('firma_jefe', '');
+
+        // separar nombre y cargo de las firmas
+        $partesCoordinador = explode('|', $firmaCoordinador);
+        $nombreCoordinador = $partesCoordinador[0] ?? '';
+        $cargoCoordinador = $partesCoordinador[1] ?? '';
+        
+        $partesJefe = explode('|', $firmaJefe);
+        $nombreJefe = $partesJefe[0] ?? '';
+        $cargoJefe = $partesJefe[1] ?? '';
 
         // obtener lista de estudiantes del grupo
         $estudiantes = Estudiante::where('id_grupo', $id_grupo)->get();
@@ -106,10 +135,21 @@ class ReporteAnexo19Controller extends Controller
             ->orderBy('orden', 'asc')
             ->get();
 
+
+        // obtener el encabezado activo para guardarlo
+        $encabezadoActivo = \App\Models\EncabezadoReporte::where('id_periodo', $id_periodo)
+            ->where('tipo_reporte', 'anexo19')
+            ->where('activo', true)
+            ->first();
+        
+        $encabezadoRuta = $encabezadoActivo ? $encabezadoActivo->ruta_imagen : null;
+        $idEncabezado = $encabezadoActivo ? $encabezadoActivo->id_encabezado : null;
+
         // datos del tutor para el encabezado
         $tutor = [
-            'nombre' => Session::get('user_name'),
-            'fecha_llenado' => now()->format('d \d\e F \d\e Y'),
+            'nombre' => $nombreDocente,
+            'fecha_llenado' => \Carbon\Carbon::parse($fechaLlenado)->locale('es')->isoFormat('D \d\e MMMM \d\e YYYY'),
+            'fecha_entrega' => \Carbon\Carbon::parse($fechaEntrega)->locale('es')->isoFormat('D \d\e MMMM \d\e YYYY'),
             'periodo' => $periodo->nombre,
             'programa' => $grupo->carrera->nombre,
             'grupo' => $grupo->nombre,
@@ -129,6 +169,33 @@ class ReporteAnexo19Controller extends Controller
             }
         }
         $porcentajeDesercion = $totalEstudiantes > 0 ? round(($desercionCount / $totalEstudiantes) * 100) : 0;
+        $observaciones = ''; // o puedes obtenerlas de alguna tabla si existen
+
+        // GUARDAR EN BASE DE DATOS ---- IMPORTANTISIMOOOOO para q no lo olvide
+        $reporte = \App\Models\ReporteAnexo19::updateOrCreate(
+            [
+                'id_docente' => $idDocente,
+                'id_grupo' => $id_grupo,
+                'id_periodo' => $id_periodo
+            ],
+            [
+                'datos_estudiantes' => json_encode($datosEstudiantes),
+                'problemas' => json_encode($problemas),
+                'indicadores' => json_encode($canalizacionesPorArea),
+                'medio_comunicacion' => $grupo->medio_comunicacion,
+                'fecha_llenado' => $fechaLlenado,
+                'fecha_entrega' => $fechaEntrega,
+                'firma_coordinador_nombre' => $nombreCoordinador,
+                'firma_coordinador_cargo' => $cargoCoordinador,
+                'firma_jefe_nombre' => $nombreJefe,
+                'firma_jefe_cargo' => $cargoJefe,
+                'id_encabezado_usado' => $idEncabezado,
+                'encabezado_ruta' => $encabezadoRuta,
+                'pdf_generado' => true,
+                'editado' => true,
+                'ultima_edicion' => now()
+            ]
+        );
 
         // generar el pdf con la vista
         $pdf = Pdf::loadView('reportes.anexo19', compact(
@@ -140,7 +207,12 @@ class ReporteAnexo19Controller extends Controller
             'totalCanalizaciones',
             'totalEstudiantes',
             'desercionCount',
-            'porcentajeDesercion'
+            'porcentajeDesercion',
+            'observaciones',
+            'nombreCoordinador',
+            'cargoCoordinador',
+            'nombreJefe',
+            'cargoJefe'
         ));
 
         // configurar tamaño de pagina y orientacion
