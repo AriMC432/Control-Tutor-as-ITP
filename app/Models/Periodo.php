@@ -20,4 +20,13 @@ class Periodo extends Model
     {
         return $query->where('activo', 1);
     }
+
+        /**
+     * obtener el encabezado activo para este periodo
+     */
+    public function encabezadoActivo()
+    {
+        return $this->hasOne(EncabezadoReporte::class, 'id_periodo')
+            ->where('activo', true);
+    }
 }

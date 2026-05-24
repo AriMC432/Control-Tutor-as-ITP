@@ -10,6 +10,10 @@ use App\Http\Controllers\AlumnoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SoporteController;
 use App\Http\Controllers\PeriodoController;
+use App\Http\Controllers\CoordinadorInstitucionalController;
+use App\Http\Controllers\ReporteAnexo19Controller;
+use App\Http\Controllers\EncabezadoReporteController;
+
 // --- RUTAS PÚBLICAS ---
 Route::get('/', [MainController::class, 'pagina'])->name('pagina');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -97,6 +101,9 @@ Route::middleware(['auth.custom'])->group(function () {
         Route::get('/coordinador/perfil/editar-foto', [CoordinadorController::class, 'editarFoto'])->name('coordinador.editar-foto');
         Route::post('/coordinador/perfil/actualizar-foto', [CoordinadorController::class, 'actualizarFoto'])->name('coordinador.actualizar-foto');
         Route::post('/coordinador/perfil/eliminar-foto', [CoordinadorController::class, 'eliminarFoto'])->name('coordinador.eliminar-foto');
+
+        // Ruta de reporte - ANEXO 20
+        Route::post('/coordinador/anexo20/generar', [App\Http\Controllers\ReporteAnexo20Controller::class, 'generate'])->name('coordinador.anexo20.generate');
     });
 
 
@@ -121,7 +128,7 @@ Route::middleware(['auth.custom'])->group(function () {
 
         // REPORTES
 
-        Route::get('/docente/reporte/anexo19/{id_grupo}/{id_periodo}', [App\Http\Controllers\ReporteAnexo19Controller::class, 'generate'])->name('docente.reporte.anexo19');
+        Route::post('/docente/reporte/anexo19/{id_grupo}/{id_periodo}', [App\Http\Controllers\ReporteAnexo19Controller::class, 'generate'])->name('docente.reporte.anexo19');
         Route::get('/docente/reporte/configurar/{id_grupo}/{id_periodo}', [App\Http\Controllers\ReporteAnexo19Controller::class, 'configurar'])->name('docente.reporte.configurar');
         Route::post('/docente/reporte/guardar-medio/{id_grupo}', [App\Http\Controllers\ReporteAnexo19Controller::class, 'guardarMedioComunicacion'])->name('docente.reporte.guardar_medio');
         Route::post('/docente/reporte/agregar-problema', [App\Http\Controllers\ReporteAnexo19Controller::class, 'agregarProblema'])->name('docente.reporte.agregar_problema');
@@ -154,6 +161,21 @@ Route::middleware(['auth.custom'])->group(function () {
         // 5. SECCIÓN: PERIODOS ESCOLARES
         Route::get('/Soporte-Periodos', [SoporteController::class, 'alta_periodo'])->name('soporte.periodos');
         Route::post('/Soporte-Periodos/guardar', [SoporteController::class, 'storePeriodo'])->name('soporte.guardar_periodo');
+
+        // 6. SECCION PARA LAS FIRMAS
+        Route::get('/firmas', [App\Http\Controllers\FirmaReporteController::class, 'index'])->name('firmas.index');
+        Route::post('/firmas/store', [App\Http\Controllers\FirmaReporteController::class, 'store'])->name('firmas.store');
+        Route::delete('/firmas/eliminar/{id}', [App\Http\Controllers\FirmaReporteController::class, 'destroy'])->name('firmas.destroy');
+
+        // ENCABEZADOS PARA SOPORTE
+
+
+        Route::middleware(['auth.custom'])->group(function () {
+            Route::get('/encabezados', [App\Http\Controllers\EncabezadoReporteController::class, 'index'])->name('encabezados.index');
+            Route::post('/encabezados/subir', [App\Http\Controllers\EncabezadoReporteController::class, 'subir'])->name('encabezados.subir');
+            Route::delete('/encabezados/eliminar/{id}', [App\Http\Controllers\EncabezadoReporteController::class, 'eliminar'])->name('encabezados.eliminar');
+            Route::post('/encabezados/activar/{id}', [App\Http\Controllers\EncabezadoReporteController::class, 'activar'])->name('encabezados.activar');
+        });
     });
 
     // RUTA PARA WHICHBROWSER DE PRUEBA - BORRAR
@@ -178,6 +200,16 @@ Route::middleware(['auth.custom'])->group(function () {
             'es_bot' => $result->device->type === 'bot' ? 'Sí' : 'No'
         ];
     });
+
+    // ==========================================
+    // RUTAS PARA ENCABEZADOS DE REPORTE
+    // ACCESIBLE POR JEFE Y SOPORTE (CONTROLADO EN CONTROLADOR)
+    // ==========================================
+    Route::get('/encabezados', [EncabezadoReporteController::class, 'index'])->name('encabezados.index');
+    Route::post('/encabezados/subir', [EncabezadoReporteController::class, 'subir'])->name('encabezados.subir');
+    Route::delete('/encabezados/eliminar/{id}', [EncabezadoReporteController::class, 'eliminar'])->name('encabezados.eliminar');
+    Route::post('/encabezados/activar/{id}', [EncabezadoReporteController::class, 'activar'])->name('encabezados.activar');
+    Route::put('/encabezados/desactivar/{id}', [EncabezadoReporteController::class, 'desactivar'])->name('encabezados.desactivar');
 });
 
 // RUTA PARA CAMBIAR PERIODO ACTIVO (USADA EN EL SUBNAV)

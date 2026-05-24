@@ -27,10 +27,19 @@ class CoordinadorController extends Controller
     {
         return view('coordinador.informes');
     }
-
+    // mostrar vista de reportes con opcion para generar anexo 20
     public function reportes()
     {
-        return view('coordinador.reportes');
+                // obtener lista de carreras para el selector
+        $carreras = \App\Models\Carrera::all();
+        
+        // obtener lista de periodos para el selector
+        $periodos = \App\Models\Periodo::orderBy('fecha_inicio', 'desc')->get();
+        
+        // obtener periodo activo
+        $periodoActivo = \App\Models\Periodo::where('activo', 1)->first();
+        
+        return view('coordinador.reportes', compact('carreras', 'periodos', 'periodoActivo'));
     }
 
     public function seguimiento()
@@ -167,4 +176,21 @@ class CoordinadorController extends Controller
 
         return back()->with('error', 'No hay foto para eliminar.');
     }
+
+    /**
+     * generar reporte anexo 20 (delegar al controlador especifico
+     */
+    public function generarAnexo20(Request $request)
+    {
+        // validar parametros
+        $request->validate([
+            'id_carrera' => 'required|exists:carreras,id_carrera',
+            'id_periodo' => 'required|exists:periodo,id_periodo'
+        ]);
+        
+        // delegar al controlador de reportes
+        $reporteController = new \App\Http\Controllers\ReporteAnexo20Controller();
+        return $reporteController->generate($request);
+    }
+
 }

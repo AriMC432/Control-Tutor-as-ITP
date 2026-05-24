@@ -11,8 +11,7 @@
         {{-- ========================================================= --}}
         <div class="col-lg-5 mb-4">
             <div class="card shadow-sm border-0 sticky-top" style="top: 20px; z-index: 1;">
-                <div class="card-header bg-primary text-white py-3">
-                    <h5 class="mb-0 fw-bold">
+                <div class="card-header bg-primary text-white py-3">                    <h5 class="mb-0 fw-bold">
                         <i class="bi bi-calendar-plus me-2"></i>Agendar Nueva
                     </h5>
                 </div>
