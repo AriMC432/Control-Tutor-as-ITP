@@ -178,29 +178,6 @@ Route::middleware(['auth.custom'])->group(function () {
         });
     });
 
-    // RUTA PARA WHICHBROWSER DE PRUEBA - BORRAR
-
-    Route::get('/test-browser', function () {
-        $userAgent = request()->header('User-Agent');
-
-        if (!$userAgent) {
-            return "No se detectó User-Agent";
-        }
-
-        $result = new WhichBrowser\Parser($userAgent);
-
-        return [
-            'user_agent' => substr($userAgent, 0, 100) . '...',
-            'navegador' => $result->browser->toString() ?: 'Desconocido',
-            'version' => $result->browser->version ?: 'Desconocido',
-            'sistema_operativo' => $result->os->toString() ?: 'Desconocido',
-            'dispositivo' => $result->device->type ?: 'Desconocido',
-            'fabricante' => $result->device->manufacturer ?: 'Desconocido',
-            'modelo' => $result->device->model ?: 'Desconocido',
-            'es_bot' => $result->device->type === 'bot' ? 'Sí' : 'No'
-        ];
-    });
-
     // ==========================================
     // RUTAS PARA ENCABEZADOS DE REPORTE
     // ACCESIBLE POR JEFE Y SOPORTE (CONTROLADO EN CONTROLADOR)

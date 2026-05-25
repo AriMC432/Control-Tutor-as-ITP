@@ -154,7 +154,7 @@
             <tr>
                 <th class="text-center">Tutoria grupal</th>
                 <th class="text-center">Tutoria individual</th>
-                <th class="text-center">Estudiantes canalizadose</th>
+                <th class="text-center">Estudiantes canalizados</th>
             </tr>
         </thead>
         <tbody>
@@ -164,8 +164,8 @@
                 <td class="text-center">{{ $docente->grupo }}</td>
                 <td class="text-center">{{ $docente->tutorias_grupales }}</td>
                 <td class="text-center">{{ $docente->tutorias_individuales }}</td>
-                <td class="text-center"><strong>{{ $docente->total_tutorias }}</strong></td>
-                <td class="text-center">{{ $docente->canalizaciones }}</td>
+                <td class="text-center"><strong>{{ $docente->estudiantes_canalizados }}</strong></td>
+                <td class="text-center">{{  $docente->areas_canalizadas ?? 'Ninguna' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -238,14 +238,14 @@
 
     {{-- firmas --}}
 
-    <div style="margin-top:35px; font-size:13px; font-family:Arial;">
+    <div style="margin-top:35px; font-size:13px; font-family: Arial, sans-serif;">
         Fecha de entrega de este reporte:
-        <span style="border-bottom:1px solid #000; display:inline-block; width:180px; text-align:center;">
+        <span style="border-bottom:1px solid #000; display:inline-block; width:180px; text-align:center; font-family: Arial, sans-serif;">
             {{ $coordinador['fecha_entrega'] }}
         </span>
     </div>
 
-    <div style="width:100%; margin-top: 50px;">
+    <div style="width:100%; margin-top: 50px; font-family: Arial, sans-serif;">
         <table style="width:100%; text-align:center; border:none;">
             <tr style="border:none;">
                 <td style="width:50%; padding-right:20px; border:none;">

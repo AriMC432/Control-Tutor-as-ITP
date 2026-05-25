@@ -53,15 +53,15 @@ class ReporteAnexo20Controller extends Controller
 
         $fechaLlenado = $request->fecha_llenado;
         $fechaEntrega = $request->fecha_entrega;
-        
+
         // procesar firmas seleccionadas
         $firmaJefe = $request->get('firma_jefe', '');
         $firmaCoordinador = $request->get('firma_coordinador', '');
-        
+
         $partesJefe = explode('|', $firmaJefe);
         $nombreJefe = $partesJefe[0] ?? '';
         $cargoJefe = $partesJefe[1] ?? '';
-        
+
         $partesCoordinador = explode('|', $firmaCoordinador);
         $nombreCoordinadorFirma = $partesCoordinador[0] ?? '';
         $cargoCoordinadorFirma = $partesCoordinador[1] ?? '';
@@ -123,13 +123,33 @@ class ReporteAnexo20Controller extends Controller
             $estudiantesAtendidos = count($todosEstudiantes);
             $totalEstudiantesAtendidos += $estudiantesAtendidos;
 
-            // contar canalizaciones
+            // contar estudiantes unicos canalizados
+            $estudiantesCanalizados = Canalizacion::whereHas('tutoria', function ($q) use ($docente, $periodo) {
+                $q->where('id_docente', $docente->id_docente)
+                    ->whereBetween('fecha', [$periodo->fecha_inicio, $periodo->fecha_fin]);
+            })->with('tutoria')->get()
+                ->pluck('tutoria.id_estudiante')
+                ->unique()
+                ->filter()
+                ->count();
+
+            $totalCanalizaciones += $estudiantesCanalizados;
+
+            // obtener las areas canalizadas (para mostrar en la columna)
+            $areasCanalizadas = Canalizacion::whereHas('tutoria', function ($q) use ($docente, $periodo) {
+                $q->where('id_docente', $docente->id_docente)
+                    ->whereBetween('fecha', [$periodo->fecha_inicio, $periodo->fecha_fin]);
+            })->with('area')->get()
+              ->pluck('area.nombre')
+              ->unique()
+              ->filter()
+              ->count();
+
+            // contar canalizaciones por area (para indicadores)
             $canalizaciones = Canalizacion::whereHas('tutoria', function ($q) use ($docente, $periodo) {
                 $q->where('id_docente', $docente->id_docente)
                     ->whereBetween('fecha', [$periodo->fecha_inicio, $periodo->fecha_fin]);
             })->with('area')->get();
-
-            $totalCanalizaciones += $canalizaciones->count();
 
             foreach ($canalizaciones as $canal) {
                 $areaNombre = strtolower($canal->area->nombre ?? '');
@@ -151,7 +171,8 @@ class ReporteAnexo20Controller extends Controller
                 'tutorias_grupales' => $tutoriasGrupales,
                 'tutorias_individuales' => $tutoriasIndividuales,
                 'total_tutorias' => $totalTutoriasDocente,
-                'canalizaciones' => $canalizaciones->count()
+                'estudiantes_canalizados' => $estudiantesCanalizados,
+                'areas_canalizadas' => $areasCanalizadas ?: 'Ninguna'
             ];
         }
 
@@ -168,7 +189,7 @@ class ReporteAnexo20Controller extends Controller
             ->where('tipo_reporte', 'anexo20')
             ->where('activo', true)
             ->first();
-        
+
         $encabezadoRuta = $encabezadoActivo ? $encabezadoActivo->ruta_imagen : null;
 
         // datos para el encabezado del pdf
@@ -184,7 +205,7 @@ class ReporteAnexo20Controller extends Controller
         // calcular estadisticas
         $totalDocentes = count($docentes);
         $totalEstudiantesSistema = Estudiante::count();
-        
+
         $porcentajePsicologica = $totalEstudiantesSistema > 0 ? round(($canalizacionesPsicologica / $totalEstudiantesSistema) * 100, 1) : 0;
         $porcentajeExtraescolares = $totalEstudiantesSistema > 0 ? round(($canalizacionesExtraescolares / $totalEstudiantesSistema) * 100, 1) : 0;
         $porcentajeBecas = $totalEstudiantesSistema > 0 ? round(($canalizacionesBecas / $totalEstudiantesSistema) * 100, 1) : 0;

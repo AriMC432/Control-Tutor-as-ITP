@@ -73,7 +73,7 @@ class ReporteAnexo19Controller extends Controller
 
         foreach ($estudiantes as $estudiante) {
             // contar tutorias grupales del estudiante en el periodo
-            $tutoriasGrupales = DetalleTutoriaGrupal::where('id_estudiante', $estudiante->id_estudiante)
+            /* $tutoriasGrupales = DetalleTutoriaGrupal::where('id_estudiante', $estudiante->id_estudiante)
                 ->whereHas('tutoriaGrupal', function ($q) use ($periodo) {
                     $q->whereBetween('fecha', [$periodo->fecha_inicio, $periodo->fecha_fin]);
                 })
@@ -81,6 +81,20 @@ class ReporteAnexo19Controller extends Controller
 
             // contar tutorias individuales del estudiante en el periodo
             $tutoriasIndividuales = TutoriaIndividual::where('id_estudiante', $estudiante->id_estudiante)
+                ->whereBetween('fecha', [$periodo->fecha_inicio, $periodo->fecha_fin])
+                ->count();*/
+
+            // contar tutorias grupales del estudiante en el periodo (SOLO LAS QUE ASISTIO)
+            $tutoriasGrupales = DetalleTutoriaGrupal::where('id_estudiante', $estudiante->id_estudiante)
+                ->where('asistencia', 1)
+                ->whereHas('tutoriaGrupal', function ($q) use ($periodo) {
+                    $q->whereBetween('fecha', [$periodo->fecha_inicio, $periodo->fecha_fin]);
+                })
+                ->count();
+
+            // contar tutorias individuales del estudiante en el periodo (SOLO LAS QUE ASISTIO)
+            $tutoriasIndividuales = TutoriaIndividual::where('id_estudiante', $estudiante->id_estudiante)
+                ->where('asistencia', 1)
                 ->whereBetween('fecha', [$periodo->fecha_inicio, $periodo->fecha_fin])
                 ->count();
 
