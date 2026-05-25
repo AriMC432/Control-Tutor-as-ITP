@@ -278,63 +278,57 @@
         </div>
     </div>
 
-    {{-- firmas --}}
-
-    <div style="margin-top:35px; font-size:13px; font-family:Arial;">
+      {{-- firmas --}}
+    <div style="margin-top:35px; font-size:13px; font-family: Arial, sans-serif;">
         Fecha de entrega de este reporte:
-        <span style="border-bottom:1px solid #000; display:inline-block; width:180px; text-align:center;">
+        <span style="border-bottom:1px solid #000; display:inline-block; width:180px; text-align:center; font-family: Arial, sans-serif;">
             {{ $tutor['fecha_entrega'] }}
         </span>
     </div>
 
-    <!-- FIRMAS -->
-    <div style="width:100%; margin-top:90px; font-family:Arial; font-size:13px;">
+    <div style="width:100%; margin-top: 50px;">
         <table style="width:100%; text-align:center; border:none;">
             <tr style="border:none;">
-                <!-- IZQUIERDA: Coordinador de Tutoría -->
-                <td style="width:50%; padding-right:40px; border:none;">
-                    <div style="border-top:1px solid #000000; width:85%; margin:0 auto 5px auto;"></div>
-                    <div style="font-weight:bold;">{{ $nombreCoordinador }}</div>
-                    <div style="font-size:12px;">{{ $cargoCoordinador }}</div>
+                <td style="width:50%; padding-right:20px; border:none;">
+                    <div style="border-top:1px solid #000; width:80%; margin:0 auto 5px auto;"></div>
+                    <div style="font-weight:bold;">{{ $nombreCoordinador ?? 'M.C. Anselmo Hernandez Ramirez' }}</div>
+                    <div style="font-size:10px;">{{ $cargoCoordinador ?? 'Coordinador de Tutoría del Departamento Académico' }}</div>
                 </td>
-
-                <!-- DERECHA: Jefe de Departamento -->
-                <td style="width:50%; padding-left:40px; border:none;">
-                    <div style="border-top:1px solid #000000; width:85%; margin:0 auto 5px auto;"></div>
-                    <div style="font-weight:bold;">{{ $nombreJefe }}</div>
-                    <div style="font-size:12px;">{{ $cargoJefe }}</div>
+                <td style="width:50%; padding-left:20px; border:none;">
+                    <div style="border-top:1px solid #000; width:80%; margin:0 auto 5px auto;"></div>
+                    <div style="font-weight:bold;">{{ $nombreJefe ?? 'Dr. Arturo Gonzalez Ceron' }}</div>
+                    <div style="font-size:10px;">{{ $cargoJefe ?? 'Jefe de Departamento Academico' }}</div>
                 </td>
             </tr>
         </table>
+    </div>
 
-        <!-- FIRMA CENTRAL: Tutor -->
-        <div style="width:45%; margin:70px auto 0 auto; text-align:center;">
-            <div style="border-top:1px solid #000; width:100%; margin-bottom:5px;"></div>
-            <div style="font-weight:bold;">{{ $tutor['nombre'] }}</div>
-            <div style="font-size:12px;">Tutor</div>
-        </div>
+    <div style="width:45%; margin:30px auto 0 auto; text-align:center;">
+        <div style="border-top:1px solid #000; width:100%; margin-bottom:5px;"></div>
+        <div style="font-weight:bold;">{{ $tutor['nombre'] }}</div>
+        <div style="font-size:10px;">Tutor</div>
     </div>
 
     {{-- pie de pagina con numeracion --}}
     <script type="text/php">
         if (isset($pdf)) {
-        $font = $fontMetrics->get_font("Arial", "normal");
-        $color = array(0, 0, 0);
-        $anchoPagina = $pdf->get_width();
-        
-        $texto1 = "ITPAC-AC-PO-010-04 Pagina {PAGE_NUM} de {PAGE_COUNT}";
-        $texto2 = '"Toda copia en PAPEL o ARCHIVO ELECTRONICO es un Documento No Controlado a excepcion del original"';
-        
-        $ancho1 = $fontMetrics->get_text_width($texto1, $font, 9);
-        $ancho2 = $fontMetrics->get_text_width($texto2, $font, 8);
-        
-        $x1 = ($anchoPagina - $ancho1) / 2;
-        $x2 = ($anchoPagina - $ancho2) / 2;
-        
-        $pdf->page_text($x1, 760, $texto1, $font, 9, $color);
-        $pdf->page_text($x2, 775, $texto2, $font, 8, $color);
-    }
-</script>
+            $font = $fontMetrics->get_font("Arial", "normal");
+            $color = array(0, 0, 0);
+            $anchoPagina = $pdf->get_width();
+            
+            $texto1 = "ITPAC-AC-PO-010-04 Pagina {PAGE_NUM} de {PAGE_COUNT}";
+            $texto2 = '"Toda copia en PAPEL o ARCHIVO ELECTRONICO es un Documento No Controlado a excepcion del original"';
+            
+            $ancho1 = $fontMetrics->get_text_width($texto1, $font, 9);
+            $ancho2 = $fontMetrics->get_text_width($texto2, $font, 8);
+            
+            $x1 = ($anchoPagina - $ancho1) / 2;
+            $x2 = ($anchoPagina - $ancho2) / 2;
+            
+            $pdf->page_text($x1, 760, $texto1, $font, 9, $color);
+            $pdf->page_text($x2, 775, $texto2, $font, 8, $color);
+        }
+    </script>
 </body>
 
 </html>
