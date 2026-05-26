@@ -63,10 +63,13 @@ class AlumnoController extends Controller
             if ($idGrupo) {
                 $tutoriasGrup = TutoriaGrupal::where('id_grupo', $idGrupo)
                     ->whereBetween('fecha', [$inicio, $fin])
-                    ->with(['docente', 'detalles' => function ($q) use ($studentId) {
-                        // Solo cargamos el detalle de ESTE alumno
-                        $q->where('id_estudiante', $studentId);
-                    }])
+                    ->with([
+                        'docente',
+                        'detalles' => function ($q) use ($studentId) {
+                            // Solo cargamos el detalle de ESTE alumno
+                            $q->where('id_estudiante', $studentId);
+                        }
+                    ])
                     ->get();
             }
 
@@ -111,7 +114,7 @@ class AlumnoController extends Controller
             // --- 4. LISTA DE ACTIVIDAD RECIENTE ---
 
             $listaInd = $tutoriasInd->map(function ($t) {
-                return (object)[
+                return (object) [
                     'tipo' => 'Individual',
                     'tema' => $t->motivo,
                     'fecha' => $t->fecha,
@@ -125,27 +128,27 @@ class AlumnoController extends Controller
                 $detalle = $tg->detalles->first();
                 $asistencia = $detalle ? $detalle->asistencia : null; // Si no hay detalle, es null (Pendiente)
 
-                return (object)[
+                return (object) [
                     'tipo' => 'Grupal',
                     'tema' => $tg->tema,
                     'fecha' => $tg->fecha,
                     'tutor' => optional($tg->docente)->nombre . ' ' . optional($tg->docente)->paterno,
                     'estado_clase' => is_null($asistencia) ? 'warning' : ($asistencia == 1 ? 'success' : 'danger'),
-                    'estado_texto' => is_null($asistencia) ? 'Pendiente' : ($asistencia == 1 ? 'Asistió' : 'Faltó'), 
+                    'estado_texto' => is_null($asistencia) ? 'Pendiente' : ($asistencia == 1 ? 'Asistió' : 'Faltó'),
                 ];
             });
 
             $tutoriasRecientes = $listaInd->concat($listaGrup)->sortByDesc('fecha')->take(5);
         }
 
-return view('alumno.index', compact(
-    'nombre', 
-    'periodoActivo', 
-    'totalAsistidas', 
-    'porcentajeAsistencia', 
-    'totalCanalizaciones', 
-    'tutoriasRecientes'
-));
+        return view('alumno.index', compact(
+            'nombre',
+            'periodoActivo',
+            'totalAsistidas',
+            'porcentajeAsistencia',
+            'totalCanalizaciones',
+            'tutoriasRecientes'
+        ));
     }
 
     /**
@@ -154,12 +157,15 @@ return view('alumno.index', compact(
     public function perfil()
     {
         $studentId = Session::get('user_id');
-        if (!$studentId) return redirect()->route('login');
+        if (!$studentId)
+            return redirect()->route('login');
 
         $estudiante = Estudiante::with('grupo')->find($studentId);
-        if (!$estudiante) return redirect()->route('login');
+        if (!$estudiante)
+            return redirect()->route('login');
+        $periodoActual = Periodo::where('activo', 1)->first();
 
-        return view('alumno.perfil', compact('estudiante'));
+        return view('alumno.perfil', compact('estudiante', 'periodoActual'));
     }
 
     /**
@@ -213,7 +219,8 @@ return view('alumno.index', compact(
     public function canalizaciones()
     {
         $studentId = Session::get('user_id');
-        if (!$studentId) return redirect()->route('login');
+        if (!$studentId)
+            return redirect()->route('login');
 
         $periodoActual = Periodo::where('activo', 1)->first();
         $canalizaciones = collect();
@@ -266,7 +273,8 @@ return view('alumno.index', compact(
     public function tutorias()
     {
         $studentId = Session::get('user_id');
-        if (!$studentId) return redirect()->route('login');
+        if (!$studentId)
+            return redirect()->route('login');
 
         // Recuperar Grupo
         $estudiante = Estudiante::find($studentId);
@@ -304,9 +312,12 @@ return view('alumno.index', compact(
             if ($idGrupo) {
                 $grupales = TutoriaGrupal::where('id_grupo', $idGrupo)
                     ->whereBetween('fecha', [$inicio, $fin])
-                    ->with(['docente', 'detalles' => function ($q) use ($studentId) {
-                        $q->where('id_estudiante', $studentId);
-                    }])
+                    ->with([
+                        'docente',
+                        'detalles' => function ($q) use ($studentId) {
+                            $q->where('id_estudiante', $studentId);
+                        }
+                    ])
                     ->get()
                     ->map(function ($tg) {
                         $detalle = $tg->detalles->first();
@@ -330,7 +341,7 @@ return view('alumno.index', compact(
             $todas = $individuales->concat($grupales)->sortByDesc('fecha')->values();
         }
 
-        return view('alumno.tutorias', ['tutorias' => $todas, 'periodo' => $periodoActual]);
+        return view('alumno.tutorias', ['tutorias' => $todas, 'periodoActual' => $periodoActual]);
     }
 
     // Formulario para editar foto -- ALUMNO
@@ -342,7 +353,7 @@ return view('alumno.index', compact(
         return view('alumno.editar-foto', compact('estudiante'));
     }
 
-    // Actualizar foto -- ALUMNO
+    // Actualizar foto 
     public function actualizarFoto(Request $request)
     {
         $studentId = Session::get('user_id');
@@ -373,14 +384,15 @@ return view('alumno.index', compact(
             // Actualizar base de datos
             $estudiante->foto = $nombreArchivo;
             $estudiante->save();
+            $periodoActual = Periodo::where('activo', 1)->first();
 
-            return redirect()->route('alumno.perfil')->with('success', 'Foto actualizada correctamente.');
+            return view('alumno.editar-foto', compact('estudiante', 'periodoActual'));
         }
 
         return back()->with('error', 'No se pudo subir la foto.');
     }
 
-    // ELIMINAR Foto -- ALUMNO
+    // ELIMINAR Foto 
 
     public function eliminarFoto()
     {

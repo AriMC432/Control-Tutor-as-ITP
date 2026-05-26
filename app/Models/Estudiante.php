@@ -22,7 +22,7 @@ class Estudiante extends Authenticatable
         'materno', 
         'num_control', 
         'correo', 
-        'contrasena', // Importante para que se pueda llenar al registrar
+        'contrasena',
         'id_grupo'
     ];
 
@@ -58,7 +58,7 @@ class Estudiante extends Authenticatable
     }
 
     // Obtener la url de la foto de perfil
-    public function getFotoUrlAttribute() // Geneera una url publica
+    public function getFotoUrlAttribute() 
     {
         if ($this->foto && file_exists(storage_path('app/public/fotos/estudiantes/' . $this->foto))) {
         return asset('storage/fotos/estudiantes/' . $this->foto);

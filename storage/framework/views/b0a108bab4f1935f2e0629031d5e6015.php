@@ -4,14 +4,17 @@
 
 <?php $__env->startSection('content'); ?>
 <div class="card p-3">
+            <?php if($periodoActivo): ?>
+                            <span class="badge bg-info fs-5 p-2 shadow-sm">
+                                <i class="bi bi-calendar-check me-1"></i> Periodo activo: <?php echo e($periodoActivo->nombre); ?>
+
+                            </span>
+                        <?php endif; ?>
     <div class="d-flex justify-content-between align-items-center">
         <div>
             <h5 class="mb-1">Lista de Canalizaciones</h5>
             <div class="text-muted">Todas las canalizaciones realizadas a estudiantes</div>
         </div>
-        <?php if($periodoActivo): ?>
-            <span class="badge bg-info">Periodo activo: <?php echo e($periodoActivo->nombre); ?></span>
-        <?php endif; ?>
     </div>
     <hr>
 

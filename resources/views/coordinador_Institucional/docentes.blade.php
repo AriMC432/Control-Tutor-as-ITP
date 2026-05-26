@@ -5,6 +5,49 @@
 @includeWhen(true, 'coordinador_institucional._subnav')
 
 @section('content')
+<<<<<<< HEAD
+    <div class="card p-3">
+        @if($periodoActivo)
+            <span class="badge bg-info fs-5 p-2 shadow-sm">
+                <i class="bi bi-calendar-check me-1"></i> Periodo activo: {{ $periodoActivo->nombre }}
+            </span>
+        @endif
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1">Lista de Docentes</h5>
+                <div class="text-muted">Todos los docentes registrados en el instituto</div>
+            </div>
+        </div>
+        <hr>
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>No. Control</th>
+                        <th>Nombre completo</th>
+                        <th>Rol</th>
+                        <th>Correo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($docentes as $index => $d)
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $d->num_control }}</td>
+                            <td>{{ $d->nombre }} {{ $d->paterno }} {{ $d->materno }}</td>
+                            <td>{{ $d->rol->nombre ?? 'N/A' }}</td>
+                            <td>{{ $d->correo }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center">No hay docentes registrados.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+=======
 <div class="container-fluid px-0">
     {{-- encabezado --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -113,7 +156,7 @@
                 <small class="text-muted">Total general: {{ $totalDocentes }} docentes</small>
                 <small class="text-muted">Docentes activos: {{ $docentesConGrupo }}</small>
             </div>
+>>>>>>> 00d5eac3cdbe3cdd50cc5713bb46c71fbc2c9093
         </div>
     </div>
-</div>
 @endsection

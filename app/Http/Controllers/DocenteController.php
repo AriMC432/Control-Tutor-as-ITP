@@ -128,7 +128,7 @@ class DocenteController extends Controller
             ->orderBy('hora', 'desc')
             ->get();
 
-        return view('docente.tutorias', compact('gruposAsignados', 'misTutoriasGrupales', 'misTutoriasIndividuales'));
+        return view('docente.tutorias', compact('gruposAsignados', 'misTutoriasGrupales', 'misTutoriasIndividuales', 'periodoActual'));
     }
 
     /**
@@ -339,31 +339,36 @@ class DocenteController extends Controller
             ->orderBy('fecha', 'desc')
             ->get();
 
-        return view('docente.canalizaciones', compact('listaTutorias', 'areasCanalizacion', 'historialCanalizaciones'));
+        return view('docente.canalizaciones', compact('listaTutorias', 'areasCanalizacion', 'historialCanalizaciones', 'periodoActual'));
     }
 
     /**
      * 6. GUARDAR CANALIZACIÓN (POST)
      */
-    public function storeCanalizacion(Request $request)
-    {
-        $request->validate([
-            'id_tutoria' => 'required|exists:tutoria_individual,id_tutoria_individual',
-            'area_id' => 'required|exists:areas_canalizacion,id_area',
-            'observaciones' => 'required|string'
-        ]);
+// app/Http/Controllers/DocenteController.php
 
-        Canalizacion::create([
-            'fecha' => Carbon::now()->toDateString(),
-            'estatus' => 'Pendiente',
-            'observaciones' => $request->observaciones,
-            'id_tutoria' => $request->id_tutoria,
-            'id_area' => $request->area_id
-        ]);
+public function storeCanalizacion(Request $request)
+{
+    $request->validate([
+        'id_tutoria' => 'required|exists:tutoria_individual,id_tutoria_individual',
+        // CORRECCIÓN: Agregar la "s" a areas_canalizacion
+        'area_id' => 'required|exists:areas_canalizacion,id_area', 
+        'observaciones' => 'required|string'
+    ]);
 
-        return back()->with('success', 'Canalización enviada correctamente.');
-    }
+    // Usamos la fecha de la tutoría para que SIEMPRE aparezca en el historial del periodo
+    $tutoria = TutoriaIndividual::find($request->id_tutoria);
 
+    Canalizacion::create([
+        'fecha' => $tutoria->fecha, 
+        'estatus' => 'Pendiente',
+        'observaciones' => $request->observaciones,
+        'id_tutoria' => $request->id_tutoria,
+        'id_area' => $request->area_id
+    ]);
+
+    return back()->with('success', 'Canalización enviada correctamente.');
+}
     /**
      * 7. ACTUALIZAR CANALIZACIÓN (PUT)
      */
@@ -392,9 +397,10 @@ class DocenteController extends Controller
 
     public function viewPerfil()
     {
+        $periodoActual = Periodo::where('activo', 1)->first();
         $idDocente = Session::get('user_id');
         $usuario = Docente::with('rol')->findOrFail($idDocente);
-        return view('docente.perfil', compact('usuario'));
+        return view('docente.perfil', compact('usuario', 'periodoActual'));
     }
 
     public function updatePassword(Request $request)

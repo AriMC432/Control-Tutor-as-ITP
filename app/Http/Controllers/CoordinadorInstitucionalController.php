@@ -362,6 +362,7 @@ class CoordinadorInstitucionalController extends Controller
         // obtener usuario de sesion
         $idUsuario = Session::get('user_id');
         $usuario = Docente::with('rol')->findOrFail($idUsuario);
+        $periodoActivo = Periodo::where('activo', 1)->first();
 
         // construir url de foto
         if ($usuario->foto) {
