@@ -13,6 +13,11 @@
 
                 {{-- Tarjeta de Contenedor Principal --}}
                 <div class="card p-4 text-start shadow-sm border-0">
+                    @if($periodoActual)
+                            <span class="badge bg-info fs-5 p-2 shadow-sm">
+                                <i class="bi bi-calendar-check me-1"></i> Periodo activo: {{ $periodoActual->nombre }}
+                            </span>
+                        @endif
                     {{-- Foto de perfil --}}
                     <div class="foto-container">
                         <img src="{{ $usuario->foto_url }}"

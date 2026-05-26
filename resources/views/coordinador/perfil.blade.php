@@ -10,8 +10,12 @@
     <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-12 col-md-10">
-
                 <div class="card p-4 text-start shadow-sm border-0">
+                    @if($periodoActual)
+                        <span class="badge bg-info fs-5 p-2 shadow-sm">
+                            <i class="bi bi-calendar-check me-1"></i> Periodo activo: {{ $periodoActual->nombre }}
+                        </span>
+                    @endif
                     {{-- Foto de perfil --}}
                     <div class="foto-container">
                         <img src="{{ $usuario->foto_url }}" alt="foto-perfil" class="profile-img"

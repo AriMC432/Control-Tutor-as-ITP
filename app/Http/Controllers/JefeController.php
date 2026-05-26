@@ -32,7 +32,6 @@ class JefeController extends Controller
     {
         $carreras = Carrera::all();
         $generaciones = Generacion::all();
-
         $periodoActual = Periodo::where('activo', 1)->first();
 
         if ($periodoActual) {
@@ -43,11 +42,12 @@ class JefeController extends Controller
             $grupos = collect();
         }
 
-        return view('jefe.alumnos', compact('carreras', 'generaciones', 'grupos'));
+        return view('jefe.alumnos', compact('carreras', 'generaciones', 'grupos', 'periodoActual'));
     }
 
     public function guardar_alumno(Request $request)
     {
+        
         $request->validate([
             'nombre' => 'required|string|max:100',
             'paterno' => 'required|string|max:100',
@@ -188,10 +188,11 @@ class JefeController extends Controller
 
     public function alta_docente()
     {
+                        $periodoActual = Periodo::where('activo', 1)->first();
         $roles = Rol::whereNotIn('nombre', ['Soporte', 'Coordinador Institucional'])->get();       if (request()->routeIs('jefe.usuarios')) {
             return view('jefe.docente', compact('roles'));
         }
-        return view('jefe.docente', compact('roles'));
+        return view('jefe.docente', compact('roles', 'periodoActual'));
     }
 
     public function storeDocente(Request $request)
@@ -322,9 +323,11 @@ class JefeController extends Controller
      */
     public function alta_periodo()
     {
+        $periodoActual = Periodo::where('activo', 1)->first();
+
         // Traemos todos los periodos para mostrarlos en la tabla de historial
         $periodos = Periodo::orderBy('fecha_inicio', 'desc')->get();
-        return view('jefe.periodos', compact('periodos'));
+        return view('jefe.periodos', compact('periodos', 'periodoActual'));
     }
 
     /**
@@ -379,9 +382,10 @@ public function activarGlobal(Request $request)
 
     public function viewPerfil()
     {
+        $periodoActual = Periodo::where('activo', 1)->first();
         $idUsuario = Session::get('user_id');
         $usuario = Docente::with('rol')->findOrFail($idUsuario);
-        return view('jefe.perfil', compact('usuario'));
+        return view('jefe.perfil', compact('usuario', 'periodoActual'));
     }
 
     public function updatePassword(Request $request)

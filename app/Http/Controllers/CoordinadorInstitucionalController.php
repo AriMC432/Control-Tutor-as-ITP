@@ -121,8 +121,9 @@ class CoordinadorInstitucionalController extends Controller
     {
         $idUsuario = Session::get('user_id');
         $usuario = Docente::with('rol')->findOrFail($idUsuario);
+        $periodoActivo = Periodo::where('activo', 1)->first();
 
-        return view('coordinador_institucional.perfil', compact('usuario'));
+        return view('coordinador_institucional.perfil', compact('usuario', 'periodoActivo'));
     }
 
     /**

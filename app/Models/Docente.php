@@ -56,7 +56,7 @@ class Docente extends Authenticatable
         return $this->hasMany(TutoriaIndividual::class, 'id_docente');
     }
 
-    // Obtenemos la url de la foto de perfil --- DOCENTE
+    // Obtenemos la url de la foto de perfil 
 
     public function getFotoUrlAttribute()
     {
@@ -67,7 +67,7 @@ class Docente extends Authenticatable
         return asset('images/default-avatar.png');
     }
 
-    // Obtenemos la ruta de almacenamiento -- DOCENTE
+    // Obtenemos la ruta de almacenamiento 
     public function getFotoPathAttribute()
     {
         return 'fotos/docentes/' . $this->num_control;

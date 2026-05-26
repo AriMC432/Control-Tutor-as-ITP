@@ -10,6 +10,12 @@
             <div class="col-12 col-md-10">
 
                 <div class="card p-4 text-start shadow-sm border-0">
+                    <?php if($periodoActual): ?>
+                            <span class="badge bg-info fs-5 p-2 shadow-sm">
+                                <i class="bi bi-calendar-check me-1"></i> Periodo activo: <?php echo e($periodoActual->nombre); ?>
+
+                            </span>
+                        <?php endif; ?>
                     
                     <div class="foto-container">
                         <img src="<?php echo e($usuario->foto_url); ?>" alt="foto-perfil" class="profile-img"
