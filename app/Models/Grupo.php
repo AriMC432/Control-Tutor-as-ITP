@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ProblemaPeriodo;
 
 class Grupo extends Model
 {
@@ -70,5 +71,19 @@ class Grupo extends Model
     public function estudiantes()
     {
         return $this->hasMany(Estudiante::class, 'id_grupo', 'id_grupo');
+    }
+
+    // CAMPO PARA LA DESERCION DE ESTUDIANTE ---- ANEXO 19 FUNCION -----------------------------------------------
+
+     // obtener el medio de comunicacion del grupo si no tiene valor, usar un texto por defecto
+    public function getMedioComunicacionAttribute($value)
+    {
+        return $value ?? 'personal, whatsapp y sesiones virtuales';
+    }
+
+   // relacion con problemas registrados 
+    public function problemasPeriodo()
+    {
+        return $this->hasMany(ProblemaPeriodo::class, 'id_grupo');
     }
 }

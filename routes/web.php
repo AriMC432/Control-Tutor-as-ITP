@@ -10,13 +10,18 @@ use App\Http\Controllers\AlumnoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SoporteController;
 use App\Http\Controllers\PeriodoController;
+use App\Http\Controllers\CoordinadorInstitucionalController;
+use App\Http\Controllers\ReporteAnexo19Controller;
+use App\Http\Controllers\EncabezadoReporteController;
+
 // --- RUTAS PÚBLICAS ---
 Route::get('/', [MainController::class, 'pagina'])->name('pagina');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/periodos/activar-global', [PeriodoController::class, 'activarGlobal'])->name('periodo.activar.global');
-Route::get('/jefe/alta-docente', [JefeController::class, 'alta_docente'])->name('jefe.alta_docente');Route::middleware(['auth.custom'])->group(function () {
+Route::get('/jefe/alta-docente', [JefeController::class, 'alta_docente'])->name('jefe.alta_docente');
+Route::middleware(['auth.custom'])->group(function () {
 
     Route::middleware(['rol:estudiante'])->group(function () {
         Route::get('/alumno', [AlumnoController::class, 'inicioalumno'])->name('alumno.index');
@@ -97,6 +102,8 @@ Route::get('/jefe/alta-docente', [JefeController::class, 'alta_docente'])->name(
         Route::post('/coordinador/perfil/actualizar-foto', [CoordinadorController::class, 'actualizarFoto'])->name('coordinador.actualizar-foto');
         Route::post('/coordinador/perfil/eliminar-foto', [CoordinadorController::class, 'eliminarFoto'])->name('coordinador.eliminar-foto');
 
+        // Ruta de reporte - ANEXO 20
+        Route::post('/coordinador/anexo20/generar', [App\Http\Controllers\ReporteAnexo20Controller::class, 'generate'])->name('coordinador.anexo20.generate');
     });
 
 
@@ -118,6 +125,15 @@ Route::get('/jefe/alta-docente', [JefeController::class, 'alta_docente'])->name(
         Route::get('/docente/perfil/editar-foto', [DocenteController::class, 'editarFoto'])->name('docente.editar-foto');
         Route::post('/docente/perfil/actualizar-foto', [DocenteController::class, 'actualizarFoto'])->name('docente.actualizar-foto');
         Route::post('/docente/perfil/eliminar-foto', [DocenteController::class, 'eliminarFoto'])->name('docente.eliminar-foto');
+
+        // REPORTES
+
+        Route::post('/docente/reporte/anexo19/{id_grupo}/{id_periodo}', [App\Http\Controllers\ReporteAnexo19Controller::class, 'generate'])->name('docente.reporte.anexo19');
+        Route::get('/docente/reporte/configurar/{id_grupo}/{id_periodo}', [App\Http\Controllers\ReporteAnexo19Controller::class, 'configurar'])->name('docente.reporte.configurar');
+        Route::post('/docente/reporte/guardar-medio/{id_grupo}', [App\Http\Controllers\ReporteAnexo19Controller::class, 'guardarMedioComunicacion'])->name('docente.reporte.guardar_medio');
+        Route::post('/docente/reporte/agregar-problema', [App\Http\Controllers\ReporteAnexo19Controller::class, 'agregarProblema'])->name('docente.reporte.agregar_problema');
+        Route::post('/docente/reporte/editar-problema', [App\Http\Controllers\ReporteAnexo19Controller::class, 'editarProblema'])->name('docente.reporte.editar_problema');
+        Route::delete('/docente/reporte/eliminar-problema/{id_problema}', [App\Http\Controllers\ReporteAnexo19Controller::class, 'eliminarProblema'])->name('docente.reporte.eliminar_problema');
     });
 
     Route::middleware(['rol:Soporte'])->group(function () {
@@ -145,30 +161,32 @@ Route::get('/jefe/alta-docente', [JefeController::class, 'alta_docente'])->name(
         // 5. SECCIÓN: PERIODOS ESCOLARES
         Route::get('/Soporte-Periodos', [SoporteController::class, 'alta_periodo'])->name('soporte.periodos');
         Route::post('/Soporte-Periodos/guardar', [SoporteController::class, 'storePeriodo'])->name('soporte.guardar_periodo');
+
+        // 6. SECCION PARA LAS FIRMAS
+        Route::get('/firmas', [App\Http\Controllers\FirmaReporteController::class, 'index'])->name('firmas.index');
+        Route::post('/firmas/store', [App\Http\Controllers\FirmaReporteController::class, 'store'])->name('firmas.store');
+        Route::delete('/firmas/eliminar/{id}', [App\Http\Controllers\FirmaReporteController::class, 'destroy'])->name('firmas.destroy');
+
+        // ENCABEZADOS PARA SOPORTE
+
+
+        Route::middleware(['auth.custom'])->group(function () {
+            Route::get('/encabezados', [App\Http\Controllers\EncabezadoReporteController::class, 'index'])->name('encabezados.index');
+            Route::post('/encabezados/subir', [App\Http\Controllers\EncabezadoReporteController::class, 'subir'])->name('encabezados.subir');
+            Route::delete('/encabezados/eliminar/{id}', [App\Http\Controllers\EncabezadoReporteController::class, 'eliminar'])->name('encabezados.eliminar');
+            Route::post('/encabezados/activar/{id}', [App\Http\Controllers\EncabezadoReporteController::class, 'activar'])->name('encabezados.activar');
+        });
     });
 
-    // RUTA PARA WHICHBROWSER DE PRUEBA - BORRAR
-
-    Route::get('/test-browser', function () {
-        $userAgent = request()->header('User-Agent');
-
-        if (!$userAgent) {
-            return "No se detectó User-Agent";
-        }
-
-        $result = new WhichBrowser\Parser($userAgent);
-
-        return [
-            'user_agent' => substr($userAgent, 0, 100) . '...',
-            'navegador' => $result->browser->toString() ?: 'Desconocido',
-            'version' => $result->browser->version ?: 'Desconocido',
-            'sistema_operativo' => $result->os->toString() ?: 'Desconocido',
-            'dispositivo' => $result->device->type ?: 'Desconocido',
-            'fabricante' => $result->device->manufacturer ?: 'Desconocido',
-            'modelo' => $result->device->model ?: 'Desconocido',
-            'es_bot' => $result->device->type === 'bot' ? 'Sí' : 'No'
-        ];
-    });
+    // ==========================================
+    // RUTAS PARA ENCABEZADOS DE REPORTE
+    // ACCESIBLE POR JEFE Y SOPORTE (CONTROLADO EN CONTROLADOR)
+    // ==========================================
+    Route::get('/encabezados', [EncabezadoReporteController::class, 'index'])->name('encabezados.index');
+    Route::post('/encabezados/subir', [EncabezadoReporteController::class, 'subir'])->name('encabezados.subir');
+    Route::delete('/encabezados/eliminar/{id}', [EncabezadoReporteController::class, 'eliminar'])->name('encabezados.eliminar');
+    Route::post('/encabezados/activar/{id}', [EncabezadoReporteController::class, 'activar'])->name('encabezados.activar');
+    Route::put('/encabezados/desactivar/{id}', [EncabezadoReporteController::class, 'desactivar'])->name('encabezados.desactivar');
 });
 
 // RUTA PARA CAMBIAR PERIODO ACTIVO (USADA EN EL SUBNAV)
@@ -180,27 +198,26 @@ Route::post('/activar-periodo', [JefeController::class, 'activarGlobal'])->name(
 
 // RUTAS PARA COORDINADOR INSTITUCIONAL
 
-    // ==========================================
-    // RUTAS PARA COORDINADOR INSTITUCIONAL
-    // ==========================================
-    Route::middleware(['auth.custom', 'rol:Coordinador Institucional'])->group(function () {
-        
-        // Dashboard / Inicio
-        Route::get('/Coordinador-Institucional', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'index'])->name('coordinst.index');
-        
-        // Listados (solo consulta)
-        Route::get('/Coordinador-Institucional/estudiantes', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'estudiantes'])->name('coordinst.estudiantes');
-        Route::get('/Coordinador-Institucional/docentes', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'docentes'])->name('coordinst.docentes');
-        Route::get('/Coordinador-Institucional/tutorias', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'tutorias'])->name('coordinst.tutorias');
-        Route::get('/Coordinador-Institucional/canalizaciones', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'canalizaciones'])->name('coordinst.canalizaciones');
-        
-        // Perfil
-        Route::get('/Coordinador-Institucional/perfil', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'perfil'])->name('coordinst.perfil.view');
-        Route::post('/Coordinador-Institucional/perfil/actualizar-password', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'updatePassword'])->name('coordinst.perfil.update_password');
-        
-        // Foto de perfil
-        Route::get('/Coordinador-Institucional/perfil/editar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'editarFoto'])->name('coordinst.editar-foto');
-        Route::post('/Coordinador-Institucional/perfil/actualizar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'actualizarFoto'])->name('coordinst.actualizar-foto');
-        Route::post('/Coordinador-Institucional/perfil/eliminar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'eliminarFoto'])->name('coordinst.eliminar-foto');
-        
-    });
+// ==========================================
+// RUTAS PARA COORDINADOR INSTITUCIONAL
+// ==========================================
+Route::middleware(['auth.custom', 'rol:Coordinador Institucional'])->group(function () {
+
+    // Dashboard / Inicio
+    Route::get('/Coordinador-Institucional', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'index'])->name('coordinst.index');
+
+    // Listados (solo consulta)
+    Route::get('/Coordinador-Institucional/estudiantes', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'estudiantes'])->name('coordinst.estudiantes');
+    Route::get('/Coordinador-Institucional/docentes', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'docentes'])->name('coordinst.docentes');
+    Route::get('/Coordinador-Institucional/tutorias', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'tutorias'])->name('coordinst.tutorias');
+    Route::get('/Coordinador-Institucional/canalizaciones', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'canalizaciones'])->name('coordinst.canalizaciones');
+
+    // Perfil
+    Route::get('/Coordinador-Institucional/perfil', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'perfil'])->name('coordinst.perfil.view');
+    Route::post('/Coordinador-Institucional/perfil/actualizar-password', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'updatePassword'])->name('coordinst.perfil.update_password');
+
+    // Foto de perfil
+    Route::get('/Coordinador-Institucional/perfil/editar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'editarFoto'])->name('coordinst.editar-foto');
+    Route::post('/Coordinador-Institucional/perfil/actualizar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'actualizarFoto'])->name('coordinst.actualizar-foto');
+    Route::post('/Coordinador-Institucional/perfil/eliminar-foto', [App\Http\Controllers\CoordinadorInstitucionalController::class, 'eliminarFoto'])->name('coordinst.eliminar-foto');
+});
