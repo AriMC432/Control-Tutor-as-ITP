@@ -3,6 +3,7 @@
 @include('docente._subnav')
 
 @section('content')
+<<<<<<< HEAD
     <div class="container py-4">
         <div class="row justify-content-center">
             @if($periodoActual)
@@ -125,6 +126,19 @@
                             </div>
                         </form>
                     </div>
+=======
+<div class="container py-4">
+    <div class="row justify-content-center">
+        
+        {{-- ========================================================= --}}
+        {{-- COLUMNA 1: FORMULARIO DE ALTA (AGENDAR)                   --}}
+        {{-- ========================================================= --}}
+        <div class="col-lg-5 mb-4">
+            <div class="card shadow-sm border-0 sticky-top" style="top: 20px; z-index: 1;">
+                <div class="card-header bg-primary text-white py-3">                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-calendar-plus me-2"></i>Agendar Nueva
+                    </h5>
+>>>>>>> 00d5eac3cdbe3cdd50cc5713bb46c71fbc2c9093
                 </div>
             </div>
 
