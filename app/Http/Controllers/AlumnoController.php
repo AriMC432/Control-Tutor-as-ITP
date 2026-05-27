@@ -70,6 +70,7 @@ class AlumnoController extends Controller
                     ->get();
             }
 
+
             // --- 3. CÁLCULO DE ESTADÍSTICAS ---
 
             // Contadores Individuales
@@ -131,21 +132,21 @@ class AlumnoController extends Controller
                     'fecha' => $tg->fecha,
                     'tutor' => optional($tg->docente)->nombre . ' ' . optional($tg->docente)->paterno,
                     'estado_clase' => is_null($asistencia) ? 'warning' : ($asistencia == 1 ? 'success' : 'danger'),
-                    'estado_texto' => is_null($asistencia) ? 'Pendiente' : ($asistencia == 1 ? 'Asistió' : 'Faltó'), 
+                    'estado_texto' => is_null($asistencia) ? 'Pendiente' : ($asistencia == 1 ? 'Asistió' : 'Faltó'),
                 ];
             });
 
             $tutoriasRecientes = $listaInd->concat($listaGrup)->sortByDesc('fecha')->take(5);
         }
 
-return view('alumno.index', compact(
-    'nombre', 
-    'periodoActivo', 
-    'totalAsistidas', 
-    'porcentajeAsistencia', 
-    'totalCanalizaciones', 
-    'tutoriasRecientes'
-));
+        return view('alumno.index', compact(
+            'nombre',
+            'periodoActivo',
+            'totalAsistidas',
+            'porcentajeAsistencia',
+            'totalCanalizaciones',
+            'tutoriasRecientes'
+        ));
     }
 
     /**

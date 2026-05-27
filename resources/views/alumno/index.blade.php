@@ -35,13 +35,13 @@
         <div class="col-12 col-md-4">
             <div class="card p-3 border-0 shadow-sm h-100">
                 <h6 class="text-primary fw-semibold text-uppercase small">Tutorías asistidas</h6>
-                <h2 class="fw-bold display-6 mb-0">{{ $totalTutorias ?? 0 }}</h2>
+                <h2 class="fw-bold display-6 mb-0">{{ $totalAsistidas ?? 0 }}</h2>
             </div>
         </div>
         <div class="col-12 col-md-4">
             <div class="card p-3 border-0 shadow-sm h-100">
                 <h6 class="text-success fw-semibold text-uppercase small">Asistencia general</h6>
-                <h2 class="fw-bold display-6 mb-0">{{ $asistencia ?? '0%' }}</h2>
+                <h2 class="fw-bold display-6 mb-0">{{ $porcentajeAsistencia ?? '0%' }}</h2>
             </div>
         </div>
         <div class="col-12 col-md-4">
