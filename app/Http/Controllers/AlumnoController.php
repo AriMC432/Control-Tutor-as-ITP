@@ -63,10 +63,13 @@ class AlumnoController extends Controller
             if ($idGrupo) {
                 $tutoriasGrup = TutoriaGrupal::where('id_grupo', $idGrupo)
                     ->whereBetween('fecha', [$inicio, $fin])
-                    ->with(['docente', 'detalles' => function ($q) use ($studentId) {
-                        // Solo cargamos el detalle de ESTE alumno
-                        $q->where('id_estudiante', $studentId);
-                    }])
+                    ->with([
+                        'docente',
+                        'detalles' => function ($q) use ($studentId) {
+                            // Solo cargamos el detalle de ESTE alumno
+                            $q->where('id_estudiante', $studentId);
+                        }
+                    ])
                     ->get();
             }
 
@@ -112,7 +115,7 @@ class AlumnoController extends Controller
             // --- 4. LISTA DE ACTIVIDAD RECIENTE ---
 
             $listaInd = $tutoriasInd->map(function ($t) {
-                return (object)[
+                return (object) [
                     'tipo' => 'Individual',
                     'tema' => $t->motivo,
                     'fecha' => $t->fecha,
@@ -126,7 +129,7 @@ class AlumnoController extends Controller
                 $detalle = $tg->detalles->first();
                 $asistencia = $detalle ? $detalle->asistencia : null; // Si no hay detalle, es null (Pendiente)
 
-                return (object)[
+                return (object) [
                     'tipo' => 'Grupal',
                     'tema' => $tg->tema,
                     'fecha' => $tg->fecha,
@@ -155,12 +158,15 @@ class AlumnoController extends Controller
     public function perfil()
     {
         $studentId = Session::get('user_id');
-        if (!$studentId) return redirect()->route('login');
+        if (!$studentId)
+            return redirect()->route('login');
 
         $estudiante = Estudiante::with('grupo')->find($studentId);
-        if (!$estudiante) return redirect()->route('login');
+        if (!$estudiante)
+            return redirect()->route('login');
+        $periodoActual = Periodo::where('activo', 1)->first();
 
-        return view('alumno.perfil', compact('estudiante'));
+        return view('alumno.perfil', compact('estudiante', 'periodoActual'));
     }
 
     /**
@@ -214,7 +220,8 @@ class AlumnoController extends Controller
     public function canalizaciones()
     {
         $studentId = Session::get('user_id');
-        if (!$studentId) return redirect()->route('login');
+        if (!$studentId)
+            return redirect()->route('login');
 
         $periodoActual = Periodo::where('activo', 1)->first();
         $canalizaciones = collect();
@@ -267,7 +274,8 @@ class AlumnoController extends Controller
     public function tutorias()
     {
         $studentId = Session::get('user_id');
-        if (!$studentId) return redirect()->route('login');
+        if (!$studentId)
+            return redirect()->route('login');
 
         // Recuperar Grupo
         $estudiante = Estudiante::find($studentId);
@@ -305,9 +313,12 @@ class AlumnoController extends Controller
             if ($idGrupo) {
                 $grupales = TutoriaGrupal::where('id_grupo', $idGrupo)
                     ->whereBetween('fecha', [$inicio, $fin])
-                    ->with(['docente', 'detalles' => function ($q) use ($studentId) {
-                        $q->where('id_estudiante', $studentId);
-                    }])
+                    ->with([
+                        'docente',
+                        'detalles' => function ($q) use ($studentId) {
+                            $q->where('id_estudiante', $studentId);
+                        }
+                    ])
                     ->get()
                     ->map(function ($tg) {
                         $detalle = $tg->detalles->first();
@@ -331,7 +342,7 @@ class AlumnoController extends Controller
             $todas = $individuales->concat($grupales)->sortByDesc('fecha')->values();
         }
 
-        return view('alumno.tutorias', ['tutorias' => $todas, 'periodo' => $periodoActual]);
+        return view('alumno.tutorias', ['tutorias' => $todas, 'periodoActual' => $periodoActual]);
     }
 
     // Formulario para editar foto -- ALUMNO
@@ -343,7 +354,7 @@ class AlumnoController extends Controller
         return view('alumno.editar-foto', compact('estudiante'));
     }
 
-    // Actualizar foto -- ALUMNO
+    // Actualizar foto 
     public function actualizarFoto(Request $request)
     {
         $studentId = Session::get('user_id');
@@ -374,14 +385,15 @@ class AlumnoController extends Controller
             // Actualizar base de datos
             $estudiante->foto = $nombreArchivo;
             $estudiante->save();
+            $periodoActual = Periodo::where('activo', 1)->first();
 
-            return redirect()->route('alumno.perfil')->with('success', 'Foto actualizada correctamente.');
+            return view('alumno.editar-foto', compact('estudiante', 'periodoActual'));
         }
 
         return back()->with('error', 'No se pudo subir la foto.');
     }
 
-    // ELIMINAR Foto -- ALUMNO
+    // ELIMINAR Foto 
 
     public function eliminarFoto()
     {

@@ -13,6 +13,13 @@
                 <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
                     <h2 class="fw-bold text-dark mb-0">Ciclos Escolares</h2>
                     <span class="text-muted">Configuración del Semestre Actual</span>
+                
+                <?php if($periodoActual): ?>
+                        <span class="badge bg-info fs-5 p-2 shadow-sm">
+                            <i class="bi bi-calendar-check me-1"></i> Periodo activo: <?php echo e($periodoActual->nombre); ?>
+
+                        </span>
+                    <?php endif; ?>
                 </div>
 
                 

@@ -5,6 +5,52 @@
 @includeWhen(true, 'coordinador_institucional._subnav')
 
 @section('content')
+<<<<<<< HEAD
+    <div class="card p-3">
+                @if($periodoActivo)
+                    <span class="badge bg-info fs-5 p-2 shadow-sm">
+                        <i class="bi bi-calendar-check me-1"></i> Periodo activo: {{ $periodoActivo->nombre }}
+                    </span>
+                @endif
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1">Lista de Estudiantes</h5>
+                <div class="text-muted">Todos los estudiantes registrados en el instituto</div>
+            </div>
+
+        </div>
+        <hr>
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>No. Control</th>
+                        <th>Nombre completo</th>
+                        <th>Grupo</th>
+                        <th>Carrera</th>
+                        <th>Correo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($estudiantes as $index => $e)
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $e->num_control }}</td>
+                        <td>{{ $e->nombre }} {{ $e->paterno }} {{ $e->materno }}</td>
+                        <td>{{ $e->grupo->nombre ?? 'N/A' }}</td>
+                        <td>{{ $e->grupo->carrera->nombre ?? 'N/A' }}</td>
+                        <td>{{ $e->correo }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="text-center">No hay estudiantes registrados.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+=======
 <div class="container-fluid px-0">
     {{-- encabezado --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -113,7 +159,7 @@
                 <small class="text-muted">Total general: {{ $totalEstudiantes }} estudiantes</small>
                 <small class="text-muted">Actualizado al periodo activo</small>
             </div>
+>>>>>>> 00d5eac3cdbe3cdd50cc5713bb46c71fbc2c9093
         </div>
     </div>
-</div>
 @endsection
