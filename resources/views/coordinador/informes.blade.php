@@ -5,6 +5,20 @@
 @section('content')
 
     @includeWhen(true, 'coordinador._subnav')
+    
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
 
     <div class="row g-3">
 
@@ -62,19 +76,39 @@
                         >
                     </div>
 
-                    <div>
-                        <label class="form-label">
-                            Archivo
-                        </label>
+                    
+<div>
+    <label class="form-label">
+        Archivo del informe
+    </label>
 
-                        <input
-                            type="file"
-                            class="form-control"
-                            name="informe"
-                            accept=".pdf,.xlsx,.xls"
-                            required
-                        >
-                    </div>
+    <input
+        type="file"
+        class="form-control"
+        name="informe"
+        accept=".pdf,.xlsx,.xls"
+        required
+    >
+
+    <div class="mt-2 p-3 rounded border bg-light">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-info-circle-fill text-primary"></i>
+            <strong>Formatos de archivo permitidos</strong>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-2">
+            <span class="badge bg-danger">PDF</span>
+            <span class="badge bg-success">Excel XLSX</span>
+            <span class="badge bg-success">Excel XLS</span>
+        </div>
+
+        <small class="text-muted d-block">
+            Puedes subir documentos PDF o archivos de Excel.
+            El tamaño máximo permitido es de 10 MB.
+        </small>
+    </div>
+</div>
+
 
                     <div class="d-flex gap-2">
 
@@ -126,60 +160,128 @@
                             </tr>
                         </thead>
 
-                        <tbody>
+                    
+<tbody>
 
-                            {{-- @foreach($informes as $inf) --}}
+    @forelse($informes as $inf)
 
-                            <tr>
+        <tr>
+            {{-- Fecha de recepción --}}
+            <td>
+                {{ $inf->created_at
+                    ? \Carbon\Carbon::parse($inf->created_at)->format('d/m/Y')
+                    : '—' }}
+            </td>
 
-                                <td>—</td>
+            {{-- Nombre del tutor --}}
+            <td>
+                {{ $inf->nombre }} {{ $inf->paterno }}
+            </td>
 
-                                <td>—</td>
+            {{-- Periodo del informe --}}
+            <td>
+                {{ $inf->periodo }}
+            </td>
 
-                                <td>—</td>
+            {{-- Archivo --}}
+            <td>
+                <a
+                    href="{{ asset('storage/' . $inf->archivo) }}"
+                    target="_blank"
+                    class="btn btn-outline btn-sm"
+                >
+                    <i class="bi bi-download"></i>
+                    Descargar
+                </a>
+            </td>
 
-                                <td>
-                                    <a
-                                        href="#"
-                                        class="btn btn-outline btn-sm"
-                                    >
-                                        Descargar
-                                    </a>
-                                </td>
+            {{-- Estatus --}}
+            <td>
+                @if($inf->estatus == 'Aceptado')
+                    <span class="badge bg-success">Aceptado</span>
+                @elseif($inf->estatus == 'Rechazado')
+                    <span class="badge bg-danger">Rechazado</span>
+                @else
+                    <span class="badge bg-warning text-dark">
+                        En revisión
+                    </span>
+                @endif
+            </td>
 
-                                <td>
-                                    <span class="badge bg-warning text-dark">
-                                        En revisión
-                                    </span>
-                                </td>
+          
+{{-- Acciones --}}
+<td>
+    @if($inf->estatus == 'En revisión')
 
-                                <td>
+        <div class="d-flex gap-2">
 
-                                    <div class="btn-group btn-group-sm">
+            {{-- Aceptar informe --}}
+            <form
+                action="{{ route('coord.informes.estatus', $inf->id_informe) }}"
+                method="POST"
+                onsubmit="return confirm('¿Estás seguro de aceptar este informe?');"
+            >
+                @csrf
+                @method('PATCH')
 
-                                        <a
-                                            href="#"
-                                            class="btn btn-success"
-                                        >
-                                            Aceptar
-                                        </a>
+                <input
+                    type="hidden"
+                    name="estatus"
+                    value="Aceptado"
+                >
 
-                                        <a
-                                            href="#"
-                                            class="btn btn-outline"
-                                        >
-                                            Rechazar
-                                        </a>
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="bi bi-check-circle"></i>
+                    Aceptar
+                </button>
+            </form>
 
-                                    </div>
+            {{-- Rechazar informe --}}
+            <form
+                action="{{ route('coord.informes.estatus', $inf->id_informe) }}"
+                method="POST"
+                onsubmit="return confirm('¿Estás seguro de rechazar este informe?');"
+            >
+                @csrf
+                @method('PATCH')
 
-                                </td>
+                <input
+                    type="hidden"
+                    name="estatus"
+                    value="Rechazado"
+                >
 
-                            </tr>
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="bi bi-x-circle"></i>
+                    Rechazar
+                </button>
+            </form>
 
-                            {{-- @endforeach --}}
+        </div>
 
-                        </tbody>
+    @else
+
+        <span class="text-muted">
+            Sin acciones
+        </span>
+
+    @endif
+</td>
+
+        </tr>
+
+    @empty
+
+        <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                Todavía no hay informes registrados.
+            </td>
+        </tr>
+
+    @endforelse
+
+</tbody>
 
                     </table>
 
@@ -207,24 +309,16 @@
                         </div>
 
                     </div>
-
-                    <div class="btn-group">
-
-                        <a
-                            href="#"
-                            class="btn btn-outline"
-                        >
-                            Generar
-                        </a>
-
-                        <a
-                            href="#"
-                            class="btn btn-success"
-                        >
-                            Descargar
-                        </a>
-
-                    </div>
+<form
+    action="{{ route('coord.informes.consolidado') }}"
+    method="GET"
+    onsubmit="return confirm('¿Deseas generar y descargar el consolidado de informes en PDF del periodo activo?');"
+>
+    <button type="submit" class="btn btn-success">
+        <i class="bi bi-file-earmark-pdf"></i>
+        Generar y descargar PDF
+    </button>
+</form>
 
                 </div>
 

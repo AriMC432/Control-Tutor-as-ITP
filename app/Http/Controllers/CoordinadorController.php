@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Models\Estudiante;
 use App\Models\TutoriaIndividual;
@@ -16,7 +19,6 @@ use App\Models\Docente;
 use App\Models\Periodo;
 use App\Models\Grupo;
 
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Validation\Rules\Password;
 
@@ -255,47 +257,180 @@ $totalTutores = DB::table('grupo')
     }
 
 
-    // =========================================================
-    // INFORMES
-    // =========================================================
-  
-public function informes()
-{
-    $periodoActual = Periodo::where('activo', 1)->first();
-
-    $tutores = Docente::whereHas('grupos', function ($query) use ($periodoActual) {
-        if ($periodoActual) {
-            $query->where('id_periodo', $periodoActual->id_periodo);
-        }
-    })
-    ->orderBy('nombre')
-    ->get();
-
-    return view('coordinador.informes', compact(
-        'periodoActual',
-        'tutores'
-    ));
-}
-
+    
 
     // =========================================================
-    // SUBIR INFORME
-   // =========================================================
+    // INFORMES DE TUTORES
+    // =========================================================
+
+    public function informes()
+    {
+        // Obtener el periodo escolar activo
+        $periodoActivo = DB::table('periodo')
+            ->where('activo', 1)
+            ->first();
+
+        // Obtener los docentes
+        $tutores = DB::table('docente')
+            ->select('id_docente', 'nombre', 'paterno')
+            ->orderBy('nombre')
+            ->get();
+
+        // Obtener los informes registrados
+        $informes = DB::table('informes_tutores as i')
+            ->join('docente as d', 'i.id_docente', '=', 'd.id_docente')
+            ->select(
+                'i.*',
+                'd.nombre',
+                'd.paterno'
+            )
+            ->orderByDesc('i.created_at')
+            ->get();
+
+        // Enviar toda la información a la vista
+        return view('coordinador.informes', compact(
+            'periodoActivo',
+            'tutores',
+            'informes'
+        ));
+    }
+
+
+    // =========================================================
+    // SUBIR INFORME DE TUTOR
+    // =========================================================
+
     public function subirInforme(Request $request)
-        {
-            $request->validate([
-                'id_docente' => 'required|exists:docentes,id_docente',
-                'periodo' => 'required|date_format:Y-m',
-                'informe' => 'required|file|mimes:pdf,xlsx,xls|max:10240',
+    {
+        // Validar los datos recibidos
+        $request->validate([
+            'id_docente' => 'required|exists:docente,id_docente',
+            'periodo' => 'required|date_format:Y-m',
+            'informe' => 'required|file|mimes:pdf,xlsx,xls|max:10240',
+        ]);
+
+        // Obtener el archivo seleccionado
+        $archivo = $request->file('informe');
+
+        // Guardar el archivo en storage/app/public/informes_tutores
+        $ruta = $archivo->store('informes_tutores', 'public');
+
+        try {
+
+            // Registrar el informe en MySQL
+            DB::table('informes_tutores')->insert([
+                'id_docente' => $request->id_docente,
+                'periodo' => $request->periodo,
+                'archivo' => $ruta,
+                'nombre_original' => $archivo->getClientOriginalName(),
+                'estatus' => 'En revisión',
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
-            // Por ahora, validar los datos no significa que el informe
-            // ya esté registrado en la base de datos.
+            return redirect()
+                ->route('coord.informes')
+                ->with('success', 'El informe se subió correctamente.');
+
+        } catch (\Throwable $e) {
+
+            // Eliminar el archivo si no pudo registrarse en la base de datos
+            Storage::disk('public')->delete($ruta);
+
             return back()->with(
                 'error',
-                'El formulario ya recibió los datos, pero falta configurar el registro del informe en la base de datos.'
+                'No fue posible registrar el informe. Inténtalo nuevamente.'
             );
         }
+    }
+
+
+// =========================================================
+// GENERAR CONSOLIDADO DE INFORMES EN PDF
+// =========================================================
+
+public function generarConsolidado()
+{
+    // Obtener el periodo activo
+    $periodoActivo = DB::table('periodo')
+        ->where('activo', 1)
+        ->first();
+
+    if (!$periodoActivo) {
+        return redirect()
+            ->route('coord.informes')
+            ->with('error', 'No hay un periodo escolar activo.');
+    }
+
+    // Obtener los meses de inicio y fin del periodo
+    $fechaInicio = \Carbon\Carbon::parse($periodoActivo->fecha_inicio)
+        ->format('Y-m');
+
+    $fechaFin = \Carbon\Carbon::parse($periodoActivo->fecha_fin)
+        ->format('Y-m');
+
+    // Obtener los informes correspondientes al periodo activo
+    $informes = DB::table('informes_tutores as i')
+        ->join('docente as d', 'i.id_docente', '=', 'd.id_docente')
+        ->select(
+            'i.id_informe',
+            'i.periodo',
+            'i.nombre_original',
+            'i.estatus',
+            'i.created_at',
+            'd.nombre',
+            'd.paterno'
+        )
+        ->whereBetween('i.periodo', [$fechaInicio, $fechaFin])
+        ->orderBy('d.nombre')
+        ->orderBy('i.periodo')
+        ->get();
+
+    // Generar el PDF
+    $pdf = Pdf::loadView('coordinador.consolidado_pdf', [
+        'periodoActivo' => $periodoActivo,
+        'informes' => $informes
+    ]);
+
+    $pdf->setPaper('a4', 'landscape');
+
+    // Descargar el archivo
+    return $pdf->download(
+        'Consolidado_' . str_replace(' ', '_', $periodoActivo->nombre) . '.pdf'
+    );
+}
+ 
+// =========================================================
+// ACEPTAR O RECHAZAR INFORMES DE TUTORES
+// =========================================================
+
+public function actualizarEstatusInforme(Request $request, $id)
+{
+    $request->validate([
+        'estatus' => 'required|in:Aceptado,Rechazado',
+    ]);
+
+    $informe = DB::table('informes_tutores')
+        ->where('id_informe', $id)
+        ->first();
+
+    if (!$informe) {
+        return redirect()
+            ->route('coord.informes')
+            ->with('error', 'El informe no existe.');
+    }
+
+    DB::table('informes_tutores')
+        ->where('id_informe', $id)
+        ->update([
+            'estatus' => $request->estatus,
+            'updated_at' => now(),
+        ]);
+
+    return redirect()
+        ->route('coord.informes')
+        ->with('success', 'El informe se marcó como ' . $request->estatus . ' correctamente.');
+}
 
     // =========================================================
     // REPORTES

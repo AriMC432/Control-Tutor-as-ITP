@@ -159,6 +159,8 @@ Route::middleware(['rol:estudiante'])->group(function () {
         Route::get('/Coordinador', [CoordinadorController::class, 'inicio'])->name('coord.index');
         Route::get('/Coordinador-informes', [CoordinadorController::class, 'informes'])->name('coord.informes');
         Route::post('/Coordinador-informes', [CoordinadorController::class, 'subirInforme'])->name('coord.informes.subir');
+        Route::get('/Coordinador-informes/consolidado',[CoordinadorController::class, 'generarConsolidado'])->name('coord.informes.consolidado');
+        Route::patch('/Coordinador-informes/{id}/estatus',[CoordinadorController::class, 'actualizarEstatusInforme'])->name('coord.informes.estatus');
         Route::get('/Coordinador-reportes', [CoordinadorController::class, 'reportes'])->name('coord.reportes');
         Route::get('/coordinador-seguimiento', [CoordinadorController::class, 'seguimiento'])->name('coord.seguimiento');
          Route::get('/coordinador/perfil', [CoordinadorController::class, 'viewPerfil'])->name('coordinador.perfil.view'); // Usado en el subnav
