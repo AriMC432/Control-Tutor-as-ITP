@@ -271,10 +271,13 @@ $totalTutores = DB::table('grupo')
             ->first();
 
         // Obtener los docentes
-        $tutores = DB::table('docente')
-            ->select('id_docente', 'nombre', 'paterno')
-            ->orderBy('nombre')
-            ->get();
+        $tutores = DB::table('docente as d')
+    ->join('grupo as g', 'd.id_docente', '=', 'g.id_docente')
+    ->where('d.id_rol', 2)
+    ->select('d.id_docente', 'd.nombre', 'd.paterno')
+    ->distinct()
+    ->orderBy('d.nombre')
+    ->get();
 
         // Obtener los informes registrados
         $informes = DB::table('informes_tutores as i')
@@ -468,191 +471,164 @@ public function actualizarEstatusInforme(Request $request, $id)
     // SEGUIMIENTO A TUTORES
     // =========================================================
 
-    public function seguimiento(Request $request)
-    {
-        $periodoActual = Periodo::where(
-            'activo',
-            1
-        )->first();
+  
+    // =========================================================
+   
+public function seguimiento(Request $request)
+{
+    // Obtener el periodo escolar activo
+    $periodoActual = Periodo::where('activo', 1)->first();
 
+    // Obtener las carreras
+    $carreras = DB::table('carreras')
+        ->orderBy('nombre')
+        ->get();
 
-        if (!$periodoActual) {
-
-            return view(
-                'coordinador.seguimiento',
-                [
-                    'seguimiento' => [],
-                    'periodoActual' => null
-                ]
-            );
-        }
-
-
-        // =====================================================
-        // Rango del mes actual
-        // =====================================================
-
-        $inicioMes = now()->startOfMonth();
-
-        $finMes = now()->endOfMonth();
-
-
-        // =====================================================
-        // Obtener grupos con docentes y carreras
-        // =====================================================
-
-        $seguimiento = Grupo::where(
-            'id_periodo',
-            $periodoActual->id_periodo
-        )
-        ->with([
-            'docente',
-            'carrera'
-        ])
-        ->get()
-        ->map(
-            function ($grupo) use (
-                $inicioMes,
-                $finMes
-            ) {
-
-
-                // =================================================
-                // Tutorías grupales del mes
-                // =================================================
-
-                $grupales = TutoriaGrupal::where(
-                    'id_grupo',
-                    $grupo->id_grupo
-                )
-                ->whereBetween(
-                    'fecha',
-                    [
-                        $inicioMes,
-                        $finMes
-                    ]
-                )
-                ->count();
-
-
-                // =================================================
-                // Tutorías individuales del mes
-                // =================================================
-
-                $individuales = TutoriaIndividual::where(
-                    'id_docente',
-                    $grupo->id_docente
-                )
-                ->whereBetween(
-                    'fecha',
-                    [
-                        $inicioMes,
-                        $finMes
-                    ]
-                )
-                ->count();
-
-
-                // =================================================
-                // Última sesión grupal
-                // =================================================
-
-                $ultimaG = TutoriaGrupal::where(
-                    'id_grupo',
-                    $grupo->id_grupo
-                )
-                ->max('fecha');
-
-
-                // =================================================
-                // Última sesión individual
-                // =================================================
-
-                $ultimaI = TutoriaIndividual::where(
-                    'id_docente',
-                    $grupo->id_docente
-                )
-                ->max('fecha');
-
-
-                // Última sesión registrada
-                $ultimaSesion = max(
-                    $ultimaG,
-                    $ultimaI
-                );
-
-
-                // =================================================
-                // Promedio de asistencia individual
-                // =================================================
-
-                $asistenciaProm =
-                    TutoriaIndividual::where(
-                        'id_docente',
-                        $grupo->id_docente
-                    )
-                    ->whereNotNull('asistencia')
-                    ->avg('asistencia')
-                    ?? 0;
-
-
-                // =================================================
-                // Crear registro para la vista
-                // =================================================
-
-                return (object) [
-
-                    'tutor' =>
-                        ($grupo->docente?->nombre ?? 'Sin')
-                        . ' ' .
-                        ($grupo->docente?->paterno ?? 'Asignar'),
-
-                    'grupo' =>
-                        $grupo->nombre,
-
-                    'carrera' =>
-                        $grupo->carrera->nombre
-                        ?? 'N/A',
-
-                    'tutorias_mes' =>
-                        $grupales + $individuales,
-
-                    'asistencia_prom' =>
-                        round(
-                            $asistenciaProm * 100,
-                            0
-                        ),
-
-                    'ultima_sesion' =>
-                        $ultimaSesion
-                        ? Carbon::parse(
-                            $ultimaSesion
-                        )->format('d/m/Y')
-                        : 'Sin sesiones',
-
-                    'estado' =>
-                        (
-                            $grupales + $individuales > 0
-                        )
-                        ? 'Activo'
-                        : 'Pendiente'
-                ];
-            }
-        );
-
-
-        return view(
-            'coordinador.seguimiento',
-            compact(
-                'seguimiento',
-                'periodoActual'
-            )
-        );
+    // Si no hay periodo activo, mostrar la vista vacía
+    if (!$periodoActual) {
+        return view('coordinador.seguimiento', [
+            'seguimiento' => collect(),
+            'periodoActual' => null,
+            'carreras' => $carreras,
+            'meses' => [],
+        ]);
     }
 
+    // Fechas del periodo escolar
+    $fechaInicio = \Carbon\Carbon::parse($periodoActual->fecha_inicio)->startOfDay();
+    $fechaFin = \Carbon\Carbon::parse($periodoActual->fecha_fin)->endOfDay();
 
-    // =========================================================
-    // PERFIL DEL COORDINADOR
+    // Generar meses automáticamente según el periodo activo
+    $meses = [];
+    $cursor = $fechaInicio->copy()->startOfMonth();
+
+    while ($cursor <= $fechaFin) {
+        $mesNumero = $cursor->format('m');
+
+        // Evitar repetir el mismo mes en el selector
+        if (!collect($meses)->contains('valor', $mesNumero)) {
+            $meses[] = [
+                'valor' => $mesNumero,
+                'nombre' => ucfirst($cursor->locale('es')->translatedFormat('F')),
+            ];
+        }
+
+        $cursor->addMonth();
+    }
+
+    // Obtener filtros seleccionados
+    $mesSeleccionado = $request->input('mes', '');
+    $carreraSeleccionada = $request->input('carrera', '');
+
+    // Validar el mes seleccionado
+    if (
+        $mesSeleccionado !== '' &&
+        !collect($meses)->contains('valor', $mesSeleccionado)
+    ) {
+        $mesSeleccionado = '';
+    }
+
+    // Obtener los grupos del periodo activo
+    $grupos = Grupo::where('id_periodo', $periodoActual->id_periodo)
+        ->when($carreraSeleccionada, function ($query) use ($carreraSeleccionada) {
+            $query->where('id_carrera', $carreraSeleccionada);
+        })
+        ->with(['docente', 'carrera'])
+        ->get();
+
+    // Construir seguimiento por grupo
+    $seguimiento = $grupos->map(function ($grupo) use (
+        $fechaInicio,
+        $fechaFin,
+        $mesSeleccionado
+    ) {
+
+        // Consulta de tutorías grupales
+        $grupalesQuery = TutoriaGrupal::where('id_grupo', $grupo->id_grupo)
+            ->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+
+        // Consulta de tutorías individuales
+        $individualesQuery = TutoriaIndividual::where(
+            'id_docente',
+            $grupo->id_docente
+        )->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+
+        // Aplicar filtro de mes
+        if ($mesSeleccionado !== '') {
+            $grupalesQuery->whereMonth('fecha', (int) $mesSeleccionado);
+            $individualesQuery->whereMonth('fecha', (int) $mesSeleccionado);
+        }
+
+        // Contar tutorías
+        $grupales = $grupalesQuery->count();
+        $individuales = $individualesQuery->count();
+
+        // Obtener última sesión dentro del periodo
+        $ultimaGQuery = TutoriaGrupal::where(
+            'id_grupo',
+            $grupo->id_grupo
+        )->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+
+        $ultimaIQuery = TutoriaIndividual::where(
+            'id_docente',
+            $grupo->id_docente
+        )->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+
+        if ($mesSeleccionado !== '') {
+            $ultimaGQuery->whereMonth('fecha', (int) $mesSeleccionado);
+            $ultimaIQuery->whereMonth('fecha', (int) $mesSeleccionado);
+        }
+
+        $ultimaG = $ultimaGQuery->max('fecha');
+        $ultimaI = $ultimaIQuery->max('fecha');
+
+        $ultimaSesion = max($ultimaG, $ultimaI);
+
+        // Calcular asistencia promedio
+        $asistenciaQuery = TutoriaIndividual::where(
+            'id_docente',
+            $grupo->id_docente
+        )
+            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->whereNotNull('asistencia');
+
+        if ($mesSeleccionado !== '') {
+            $asistenciaQuery->whereMonth('fecha', (int) $mesSeleccionado);
+        }
+
+        $asistenciaProm = $asistenciaQuery->avg('asistencia') ?? 0;
+
+        return (object) [
+            'tutor' => ($grupo->docente?->nombre ?? 'Sin')
+                . ' '
+                . ($grupo->docente?->paterno ?? 'Asignar'),
+
+            'grupo' => $grupo->nombre,
+
+            'carrera' => $grupo->carrera->nombre ?? 'N/A',
+
+            'tutorias_mes' => $grupales + $individuales,
+
+            'asistencia_prom' => round($asistenciaProm * 100, 0),
+
+            'ultima_sesion' => $ultimaSesion
+                ? \Carbon\Carbon::parse($ultimaSesion)->format('d/m/Y')
+                : 'Sin sesiones',
+
+            'estado' => ($grupales + $individuales > 0)
+                ? 'Activo'
+                : 'Pendiente',
+        ];
+    });
+
+    return view('coordinador.seguimiento', compact(
+        'seguimiento',
+        'periodoActual',
+        'carreras',
+        'meses'
+    ));
+}
+ // PERFIL DEL COORDINADOR
     // =========================================================
 
     public function viewPerfil()
