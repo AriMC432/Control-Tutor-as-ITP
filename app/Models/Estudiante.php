@@ -10,68 +10,165 @@ class Estudiante extends Authenticatable
 {
     use HasFactory, HasApiTokens;
 
-    // 1. CORRECCIÓN: Minúsculas para compatibilidad universal
+    /*
+    |--------------------------------------------------------------------------
+    | TABLA
+    |--------------------------------------------------------------------------
+    */
+
+    // Nombre de la tabla de estudiantes.
     protected $table = 'estudiante';
-    
+
+    // Llave primaria de la tabla.
     protected $primaryKey = 'id_estudiante';
+
+    // La tabla no utiliza created_at / updated_at.
     public $timestamps = false;
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | CAMPOS PERMITIDOS
+    |--------------------------------------------------------------------------
+    */
+
     protected $fillable = [
-        'nombre', 
-        'paterno', 
-        'materno', 
-        'num_control', 
-        'correo', 
+        'nombre',
+        'paterno',
+        'materno',
+        'num_control',
+        'correo',
         'contrasena',
-        'id_grupo'
+        'id_grupo',
+
+        // Foto de perfil del estudiante.
+        'foto',
     ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CAMPOS OCULTOS
+    |--------------------------------------------------------------------------
+    */
 
     protected $hidden = [
         'contrasena',
     ];
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTENTICACIÓN
+    |--------------------------------------------------------------------------
+    */
+
     /**
-     * VITAL: Mapeo de contraseña para el Login
+     * Laravel utiliza este método para obtener
+     * la contraseña del estudiante durante el login.
      */
     public function getAuthPassword()
     {
         return $this->contrasena;
     }
 
-    // --- RELACIONES ---
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELACIÓN CON GRUPO
+    |--------------------------------------------------------------------------
+    */
 
     /**
-     * Relación: Un Estudiante pertenece a un Grupo.
+     * Un estudiante pertenece a un grupo.
      */
     public function grupo()
     {
-        return $this->belongsTo(Grupo::class, 'id_grupo', 'id_grupo');
+        return $this->belongsTo(
+            Grupo::class,
+            'id_grupo',
+            'id_grupo'
+        );
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELACIÓN CON TUTORÍAS INDIVIDUALES
+    |--------------------------------------------------------------------------
+    */
+
     /**
-     * Relación: Un Estudiante tiene muchas Tutorías Individuales.
-     * (Útil para sacar estadísticas en el Dashboard)
+     * Un estudiante puede tener muchas
+     * tutorías individuales.
      */
     public function tutoriasIndividuales()
     {
-        return $this->hasMany(TutoriaIndividual::class, 'id_estudiante', 'id_estudiante');
+        return $this->hasMany(
+            TutoriaIndividual::class,
+            'id_estudiante',
+            'id_estudiante'
+        );
     }
 
-    // Obtener la url de la foto de perfil
-    public function getFotoUrlAttribute() 
+
+    /*
+    |--------------------------------------------------------------------------
+    | URL DE LA FOTO DE PERFIL
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Devuelve automáticamente la URL pública
+     * de la fotografía del estudiante.
+     *
+     * Ejemplo:
+     *
+     * storage/fotos/estudiantes/12345678.jpg
+     *
+     * Si el estudiante no tiene foto,
+     * se utiliza el avatar predeterminado.
+     */
+    public function getFotoUrlAttribute()
     {
-        if ($this->foto && file_exists(storage_path('app/public/fotos/estudiantes/' . $this->foto))) {
-        return asset('storage/fotos/estudiantes/' . $this->foto);
-    }
-    // Imagen por defecto si no hay foto
-     return asset('images/default-avatar.png');
+        // Si existe un nombre de archivo guardado
+        // en la columna "foto", construimos su URL.
+        if (!empty($this->foto)) {
 
+            return asset(
+                'storage/fotos/estudiantes/' . $this->foto
+            );
+        }
+
+        // Si no tiene fotografía,
+        // mostramos la imagen predeterminada.
+        return asset('images/default-avatar.png');
     }
 
-    // Obtener ruta de almacenamiento
+
+    /*
+    |--------------------------------------------------------------------------
+    | RUTA DE ALMACENAMIENTO
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Devuelve la ruta relativa donde se almacena
+     * la fotografía del estudiante.
+     */
     public function getFotoPathAttribute()
     {
-        return 'fotos/estudiantes/' . $this->num_control . '.' . 'jpg';
+        // Si existe una fotografía registrada,
+        // utilizamos directamente ese nombre.
+        if (!empty($this->foto)) {
 
+            return 'fotos/estudiantes/' . $this->foto;
+        }
+
+        // Ruta que se utilizaría para una foto
+        // basada en el número de control.
+        return 'fotos/estudiantes/' .
+               $this->num_control .
+               '.jpg';
     }
 }

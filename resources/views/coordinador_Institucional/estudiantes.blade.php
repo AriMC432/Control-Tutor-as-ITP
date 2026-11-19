@@ -1,68 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Metricas de Estudiantes')
+@section('title', 'Métricas de estudiantes')
 
 @includeWhen(true, 'coordinador_institucional._subnav')
 
 @section('content')
-<<<<<<< HEAD
-    <div class="card p-3">
-                @if($periodoActivo)
-                    <span class="badge bg-info fs-5 p-2 shadow-sm">
-                        <i class="bi bi-calendar-check me-1"></i> Periodo activo: {{ $periodoActivo->nombre }}
-                    </span>
-                @endif
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-1">Lista de Estudiantes</h5>
-                <div class="text-muted">Todos los estudiantes registrados en el instituto</div>
-            </div>
-
-        </div>
-        <hr>
-
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>No. Control</th>
-                        <th>Nombre completo</th>
-                        <th>Grupo</th>
-                        <th>Carrera</th>
-                        <th>Correo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($estudiantes as $index => $e)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td>{{ $e->num_control }}</td>
-                        <td>{{ $e->nombre }} {{ $e->paterno }} {{ $e->materno }}</td>
-                        <td>{{ $e->grupo->nombre ?? 'N/A' }}</td>
-                        <td>{{ $e->grupo->carrera->nombre ?? 'N/A' }}</td>
-                        <td>{{ $e->correo }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="text-center">No hay estudiantes registrados.</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-=======
 <div class="container-fluid px-0">
     {{-- encabezado --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-semibold mb-1" style="color: #1a3a6b;">Metricas de Estudiantes</h4>
-            <p class="text-muted small mb-0">Estadisticas institucionales</p>
+            <h4 class="fw-semibold mb-1" style="color: #1a3a6b;">Métricas de estudiantes</h4>
+            <p class="text-muted small mb-0">Estadísticas institucionales</p>
         </div>
-        @if($periodoActivo)
-            <span class="badge px-3 py-2" style="background-color: #1a3a6b; color: white;">
-                <i class="bi bi-calendar3 me-1"></i> {{ $periodoActivo->nombre }}
-            </span>
-        @endif
+       
     </div>
 
     {{-- tarjetas de metricas principales --}}
@@ -74,7 +24,7 @@
                         <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background-color: rgba(26, 58, 107, 0.1);">
                             <i class="bi bi-people fs-4" style="color: #1a3a6b;"></i>
                         </div>
-                        <span class="badge bg-light text-secondary">total</span>
+                        <span class="badge bg-light text-secondary">Total</span>
                     </div>
                     <h2 class="fw-bold mb-0" style="color: #1a3a6b;">{{ $totalEstudiantes }}</h2>
                     <p class="text-muted small mt-2 mb-0">Estudiantes registrados</p>
@@ -89,10 +39,10 @@
                         <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background-color: rgba(26, 58, 107, 0.1);">
                             <i class="bi bi-mortarboard fs-4" style="color: #1a3a6b;"></i>
                         </div>
-                        <span class="badge bg-light text-secondary">total</span>
+                        <span class="badge bg-light text-secondary">Total</span>
                     </div>
                     <h2 class="fw-bold mb-0" style="color: #1a3a6b;">{{ $totalCarreras }}</h2>
-                    <p class="text-muted small mt-2 mb-0">Carreras ofertadas</p>
+                    <p class="text-muted small mt-2 mb-0">Carreras</p>
                 </div>
             </div>
         </div>
@@ -104,7 +54,7 @@
                         <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background-color: rgba(26, 58, 107, 0.1);">
                             <i class="bi bi-grid-3x3-gap-fill fs-4" style="color: #1a3a6b;"></i>
                         </div>
-                        <span class="badge bg-light text-secondary">promedio</span>
+                        <span class="badge bg-light text-secondary">Promedio</span>
                     </div>
                     <h2 class="fw-bold mb-0" style="color: #1a3a6b;">{{ $promedioPorGrupo }}</h2>
                     <p class="text-muted small mt-2 mb-0">Estudiantes por grupo</p>
@@ -116,8 +66,8 @@
     {{-- tabla de distribucion por carrera --}}
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-0 pt-4 pb-0">
-            <h5 class="fw-semibold" style="color: #1a3a6b;">Distribucion por Carrera</h5>
-            <p class="text-muted small">Concentracion de estudiantes por programa educativo</p>
+            <h5 class="fw-semibold" style="color: #1a3a6b;">Distribución por carrera</h5>
+            <p class="text-muted small">Recopilación de estudiantes por programa educativo</p>
         </div>
         <div class="card-body p-4">
             <div class="table-responsive">
@@ -126,7 +76,7 @@
                         <tr>
                             <th class="py-3 ps-3" style="color: #1a3a6b; font-weight: 600;">Carrera</th>
                             <th class="py-3 text-center" style="color: #1a3a6b; font-weight: 600;">Estudiantes</th>
-                            <th class="py-3 text-center" style="color: #1a3a6b; font-weight: 600;">Participacion</th>
+                            <th class="py-3 text-center" style="color: #1a3a6b; font-weight: 600;">Porcentaje de estudiantes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -157,9 +107,9 @@
         <div class="card-footer bg-white border-0 pb-4 pt-0">
             <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted">Total general: {{ $totalEstudiantes }} estudiantes</small>
-                <small class="text-muted">Actualizado al periodo activo</small>
+                <small class="text-muted">Actualizado al período activo</small>
             </div>
->>>>>>> 00d5eac3cdbe3cdd50cc5713bb46c71fbc2c9093
         </div>
     </div>
+</div>
 @endsection

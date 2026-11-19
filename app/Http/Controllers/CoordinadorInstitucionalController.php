@@ -41,6 +41,10 @@ class CoordinadorInstitucionalController extends Controller
         // obtener periodo activo
         $periodoActivo = Periodo::where('activo', 1)->first();
 
+        $idUsuario = Session::get('user_id');
+
+        $usuario = Docente::findOrFail($idUsuario); 
+
         // calcular tutorias del periodo activo
         $tutoriasIndividualesPeriodo = 0;
         $tutoriasGrupalesPeriodo = 0;
@@ -61,7 +65,8 @@ class CoordinadorInstitucionalController extends Controller
             'totalCanalizaciones',
             'periodoActivo',
             'tutoriasIndividualesPeriodo',
-            'tutoriasGrupalesPeriodo'
+            'tutoriasGrupalesPeriodo',
+            'usuario'
         ));
     }
 
@@ -79,7 +84,7 @@ class CoordinadorInstitucionalController extends Controller
         $totalGrupos = Grupo::count();
 
         // calcular promedio de estudiantes por grupo
-        $promedioPorGrupo = $totalGrupos > 0 ? round($totalEstudiantes / $totalGrupos, 1) : 0;
+        $promedioPorGrupo = $totalGrupos > 0 ? round($totalEstudiantes / $totalGrupos, 0) : 0;
 
         // calcular distribucion de estudiantes por carrera con porcentaje
         $carreras = Carrera::all();
@@ -121,7 +126,6 @@ class CoordinadorInstitucionalController extends Controller
     /**
      * mostrar metricas de docentes
      */
-
     public function docentes()
     {
         // obtener periodo activo
@@ -138,7 +142,7 @@ class CoordinadorInstitucionalController extends Controller
 
         // calcular promedio de grupos por docente
         $totalGrupos = Grupo::count();
-        $promedioGruposPorDocente = $totalDocentes > 0 ? round($totalGrupos / $totalDocentes, 1) : 0;
+        $promedioGruposPorDocente = $totalDocentes > 0 ? round($totalGrupos / $totalDocentes, 0) : 0;
 
         // calcular distribucion de docentes por rol
         $roles = Rol::all();
@@ -176,115 +180,127 @@ class CoordinadorInstitucionalController extends Controller
     /**
      * mostrar metricas de tutorias 
      */
-        /**
-     * mostrar metricas de tutorias 
-     */
     public function tutorias()
     {
         // obtener periodo activo
         $periodoActivo = Periodo::where('activo', 1)->first();
 
-        // calcular totales de tutorias
-        $totalTutoriasIndividuales = TutoriaIndividual::count();
-        $totalTutoriasGrupales = TutoriaGrupal::count();
-        $totalTutorias = $totalTutoriasIndividuales + $totalTutoriasGrupales;
+        // 
+        if ($periodoActivo) {
+            $totalTutoriasIndividuales = TutoriaIndividual::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])->count();
+            $totalTutoriasGrupales = TutoriaGrupal::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])->count();
+            $totalTutorias = $totalTutoriasIndividuales + $totalTutoriasGrupales;
 
-        // calcular asistencia promedio en tutorias individuales
-        $asistenciaPromedio = TutoriaIndividual::whereNotNull('asistencia')
-            ->selectRaw('AVG(CASE WHEN asistencia = 1 THEN 100 ELSE 0 END) as promedio')
-            ->value('promedio');
-        $asistenciaPromedio = round($asistenciaPromedio ?? 0);
+            // calcular asistencia promedio en tutorias individuales SOLO del periodo
+            $asistenciaPromedio = TutoriaIndividual::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])
+                ->whereNotNull('asistencia')
+                ->selectRaw('AVG(CASE WHEN asistencia = 1 THEN 100 ELSE 0 END) as promedio')
+                ->value('promedio');
+            $asistenciaPromedio = round($asistenciaPromedio ?? 0);
 
-        // calcular tutorias por mes con nombres en español
-        $tutoriasIndividualesPorMes = TutoriaIndividual::select(
-                DB::raw('YEAR(fecha) as anio'),
-                DB::raw('MONTH(fecha) as mes_numero'),
-                DB::raw("
-                    ELT(MONTH(fecha),
-                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ) as mes_nombre
-                "),
-                DB::raw('COUNT(*) as total_individuales')
-            )
-            ->groupBy('anio', 'mes_numero', 'mes_nombre')
-            ->orderBy('anio', 'desc')
-            ->orderBy('mes_numero', 'desc')
-            ->get();
+            // calcular tutorias por mes con nombres en español SOLO del periodo
+            $tutoriasIndividualesPorMes = TutoriaIndividual::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])
+                ->select(
+                    DB::raw('YEAR(fecha) as anio'),
+                    DB::raw('MONTH(fecha) as mes_numero'),
+                    DB::raw("
+                        ELT(MONTH(fecha),
+                            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                        ) as mes_nombre
+                    "),
+                    DB::raw('COUNT(*) as total_individuales')
+                )
+                ->groupBy('anio', 'mes_numero', 'mes_nombre')
+                ->orderBy('anio', 'desc')
+                ->orderBy('mes_numero', 'desc')
+                ->get();
 
-        $tutoriasGrupalesPorMes = TutoriaGrupal::select(
-                DB::raw('YEAR(fecha) as anio'),
-                DB::raw('MONTH(fecha) as mes_numero'),
-                DB::raw("
-                    ELT(MONTH(fecha),
-                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ) as mes_nombre
-                "),
-                DB::raw('COUNT(*) as total_grupales')
-            )
-            ->groupBy('anio', 'mes_numero', 'mes_nombre')
-            ->orderBy('anio', 'desc')
-            ->orderBy('mes_numero', 'desc')
-            ->get();
+            $tutoriasGrupalesPorMes = TutoriaGrupal::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])
+                ->select(
+                    DB::raw('YEAR(fecha) as anio'),
+                    DB::raw('MONTH(fecha) as mes_numero'),
+                    DB::raw("
+                        ELT(MONTH(fecha),
+                            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                        ) as mes_nombre
+                    "),
+                    DB::raw('COUNT(*) as total_grupales')
+                )
+                ->groupBy('anio', 'mes_numero', 'mes_nombre')
+                ->orderBy('anio', 'desc')
+                ->orderBy('mes_numero', 'desc')
+                ->get();
 
-        // combinar resultados en una sola coleccion
-        $tutoriasPorMes = collect();
-        
-        foreach ($tutoriasIndividualesPorMes as $item) {
-            $grupales = $tutoriasGrupalesPorMes->firstWhere(function($g) use ($item) {
-                return $g->anio == $item->anio && $g->mes_numero == $item->mes_numero;
-            });
+            // combinar resultados en una sola coleccion
+            $tutoriasPorMes = collect();
             
-            $tutoriasPorMes->push((object)[
-                'mes' => $item->mes_nombre . ' ' . $item->anio,
-                'individuales' => $item->total_individuales,
-                'grupales' => $grupales ? $grupales->total_grupales : 0,
-                'total' => $item->total_individuales + ($grupales ? $grupales->total_grupales : 0)
-            ]);
-        }
-        
-        // agregar meses donde solo hay tutorias grupales
-        foreach ($tutoriasGrupalesPorMes as $item) {
-            $yaExiste = $tutoriasPorMes->firstWhere(function($t) use ($item) {
-                return strpos($t->mes, $item->mes_nombre) !== false && strpos($t->mes, (string)$item->anio) !== false;
-            });
-            
-            if (!$yaExiste) {
+            foreach ($tutoriasIndividualesPorMes as $item) {
+                $grupales = $tutoriasGrupalesPorMes->firstWhere(function($g) use ($item) {
+                    return $g->anio == $item->anio && $g->mes_numero == $item->mes_numero;
+                });
+                
                 $tutoriasPorMes->push((object)[
                     'mes' => $item->mes_nombre . ' ' . $item->anio,
-                    'individuales' => 0,
-                    'grupales' => $item->total_grupales,
-                    'total' => $item->total_grupales
+                    'individuales' => $item->total_individuales,
+                    'grupales' => $grupales ? $grupales->total_grupales : 0,
+                    'total' => $item->total_individuales + ($grupales ? $grupales->total_grupales : 0)
                 ]);
             }
-        }
-        
-        // ordenar por fecha descendente
-        $tutoriasPorMes = $tutoriasPorMes->sortByDesc(function($item) {
-            preg_match('/([A-Za-z]+) (\d{4})/', $item->mes, $matches);
-            if (count($matches) == 3) {
-                $mesesNumeros = [
-                    'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4,
-                    'Mayo' => 5, 'Junio' => 6, 'Julio' => 7, 'Agosto' => 8,
-                    'Septiembre' => 9, 'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12
-                ];
-                $anio = (int)$matches[2];
-                $mesNumero = $mesesNumeros[$matches[1]] ?? 0;
-                return $anio * 100 + $mesNumero;
+            
+            // agregar meses donde solo hay tutorias grupales
+            foreach ($tutoriasGrupalesPorMes as $item) {
+                $yaExiste = $tutoriasPorMes->firstWhere(function($t) use ($item) {
+                    return strpos($t->mes, $item->mes_nombre) !== false && strpos($t->mes, (string)$item->anio) !== false;
+                });
+                
+                if (!$yaExiste) {
+                    $tutoriasPorMes->push((object)[
+                        'mes' => $item->mes_nombre . ' ' . $item->anio,
+                        'individuales' => 0,
+                        'grupales' => $item->total_grupales,
+                        'total' => $item->total_grupales
+                    ]);
+                }
             }
-            return 0;
-        })->values();
+            
+            // ordenar por fecha descendente
+            $tutoriasPorMes = $tutoriasPorMes->sortByDesc(function($item) {
+                preg_match('/([A-Za-z]+) (\d{4})/', $item->mes, $matches);
+                if (count($matches) == 3) {
+                    $mesesNumeros = [
+                        'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4,
+                        'Mayo' => 5, 'Junio' => 6, 'Julio' => 7, 'Agosto' => 8,
+                        'Septiembre' => 9, 'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12
+                    ];
+                    $anio = (int)$matches[2];
+                    $mesNumero = $mesesNumeros[$matches[1]] ?? 0;
+                    return $anio * 100 + $mesNumero;
+                }
+                return 0;
+            })->values();
 
-        // calcular tutorias por docente (sin nombres)
-        $tutoriasPorDocente = TutoriaIndividual::select('id_docente', DB::raw('count(*) as total'))
-            ->groupBy('id_docente')
-            ->get();
+            // calcular tutorias por docente (sin nombres) SOLO del periodo
+            $tutoriasPorDocente = TutoriaIndividual::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])
+                ->select('id_docente', DB::raw('count(*) as total'))
+                ->groupBy('id_docente')
+                ->get();
 
-        $totalDocentesConTutorias = $tutoriasPorDocente->count();
-        $promedioTutoriasPorDocente = $totalDocentesConTutorias > 0
-            ? round($totalTutorias / $totalDocentesConTutorias, 1)
-            : 0;
+            $totalDocentesConTutorias = $tutoriasPorDocente->count();
+            $promedioTutoriasPorDocente = $totalDocentesConTutorias > 0
+                ? round($totalTutorias / $totalDocentesConTutorias, 0)
+                : 0;
+        } else {
+            // si no hay periodo activo, todo en cero
+            $totalTutoriasIndividuales = 0;
+            $totalTutoriasGrupales = 0;
+            $totalTutorias = 0;
+            $asistenciaPromedio = 0;
+            $tutoriasPorMes = collect();
+            $totalDocentesConTutorias = 0;
+            $promedioTutoriasPorDocente = 0;
+        }
 
         // enviar datos a la vista
         return view('coordinador_institucional.tutorias', compact(
@@ -307,40 +323,52 @@ class CoordinadorInstitucionalController extends Controller
         // obtener periodo activo
         $periodoActivo = Periodo::where('activo', 1)->first();
 
-        // calcular metricas basicas
-        $totalCanalizaciones = Canalizacion::count();
+        //  calcular metricas SOLO del periodo activo
+        if ($periodoActivo) {
+            $totalCanalizaciones = Canalizacion::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])->count();
 
-        // calcular canalizaciones por estatus
-        $atendidas = Canalizacion::where('estatus', 'Atendido')->count();
-        $enProceso = Canalizacion::where('estatus', 'En Proceso')->count();
-        $pendientes = Canalizacion::where('estatus', 'Pendiente')->count();
+            // calcular canalizaciones por estatus SOLO del periodo
+            $atendidas = Canalizacion::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])->where('estatus', 'Atendido')->count();
+            $enProceso = Canalizacion::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])->where('estatus', 'En Proceso')->count();
+            $pendientes = Canalizacion::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])->where('estatus', 'Pendiente')->count();
 
-        // calcular tasa de atencion
-        $tasaAtencion = $totalCanalizaciones > 0 ? round(($atendidas / $totalCanalizaciones) * 100, 1) : 0;
+            // calcular tasa de atencion
+            $tasaAtencion = $totalCanalizaciones > 0 ? round(($atendidas / $totalCanalizaciones) * 100, 1) : 0;
 
-        // calcular canalizaciones por area
-        $areas = AreaCanalizacion::all();
-        $canalizacionesPorArea = [];
+            // calcular canalizaciones por area SOLO del periodo
+            $areas = AreaCanalizacion::all();
+            $canalizacionesPorArea = [];
 
-        foreach ($areas as $area) {
-            $total = Canalizacion::where('id_area', $area->id_area)->count();
+            foreach ($areas as $area) {
+                $total = Canalizacion::whereBetween('fecha', [$periodoActivo->fecha_inicio, $periodoActivo->fecha_fin])
+                    ->where('id_area', $area->id_area)
+                    ->count();
 
-            if ($total > 0) {
-                $porcentaje = $totalCanalizaciones > 0 ? round(($total / $totalCanalizaciones) * 100, 1) : 0;
+                if ($total > 0) {
+                    $porcentaje = $totalCanalizaciones > 0 ? round(($total / $totalCanalizaciones) * 100, 1) : 0;
 
-                $canalizacionesPorArea[] = (object) [
-                    'nombre' => $area->nombre,
-                    'total' => $total,
-                    'porcentaje' => $porcentaje,
-                    'descripcion' => $area->descripcion
-                ];
+                    $canalizacionesPorArea[] = (object) [
+                        'nombre' => $area->nombre,
+                        'total' => $total,
+                        'porcentaje' => $porcentaje,
+                        'descripcion' => $area->descripcion
+                    ];
+                }
             }
-        }
 
-        // ordenar de mayor a menor por cantidad
-        usort($canalizacionesPorArea, function ($a, $b) {
-            return $b->total <=> $a->total;
-        });
+            // ordenar de mayor a menor por cantidad
+            usort($canalizacionesPorArea, function ($a, $b) {
+                return $b->total <=> $a->total;
+            });
+        } else {
+            // si no hay periodo activo, todo en cero
+            $totalCanalizaciones = 0;
+            $atendidas = 0;
+            $enProceso = 0;
+            $pendientes = 0;
+            $tasaAtencion = 0;
+            $canalizacionesPorArea = [];
+        }
 
         // enviar datos a la vista
         return view('coordinador_institucional.canalizaciones', compact(
@@ -372,7 +400,7 @@ class CoordinadorInstitucionalController extends Controller
         }
 
         // enviar datos a la vista
-        return view('coordinador_institucional.perfil', compact('usuario'));
+        return view('coordinador_institucional.perfil', compact('periodoActivo','usuario'));
     }
 
     /**

@@ -17,403 +17,1126 @@ use Illuminate\Validation\Rules\Password;
 class AlumnoController extends Controller
 {
     /**
-     * DASHBOARD: Estadísticas del semestre ACTUAL.
+     * =========================================================
+     * DASHBOARD DEL ALUMNO
+     * =========================================================
      */
     public function inicioalumno()
     {
+        // =====================================================
+        // 1. OBTENER ID DEL ALUMNO
+        // =====================================================
         $studentId = Session::get('user_id');
-        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
 
         if (!$studentId) {
-            return redirect()->route('login')->with('error', 'Debes iniciar sesión.');
+            return redirect()
+                ->route('login')
+                ->with('error', 'Debes iniciar sesión.');
         }
 
-        $nombre = Session::get('user_name', 'Estudiante');
+        // =====================================================
+        // 2. OBTENER ALUMNO
+        // =====================================================
+        $estudiante = Estudiante::with('grupo')->find($studentId);
 
-        // Recuperar datos del estudiante para saber su grupo
-        $estudiante = Estudiante::find($studentId);
-        $idGrupo = $estudiante ? $estudiante->id_grupo : null;
+        if (!$estudiante) {
+            Session::flush();
 
-        // 1. OBTENER PERIODO ACTUAL
+            return redirect()
+                ->route('login')
+                ->with('error', 'No se encontró el estudiante.');
+        }
+
+        // =====================================================
+        // 3. ACTUALIZAR DATOS DE SESIÓN
+        // =====================================================
+
+        // Nombre
+        $nombre = trim(
+            ($estudiante->nombre ?? '') . ' ' .
+            ($estudiante->paterno ?? '') . ' ' .
+            ($estudiante->materno ?? '')
+        );
+
+        if (empty(trim($nombre))) {
+            $nombre = Session::get('user_name', 'Estudiante');
+        }
+
+        Session::put('user_name', $nombre);
+
+        // FOTO
+        $foto = $estudiante->foto ?? null;
+
+        Session::put('user_photo', $foto);
+
+        // Tipo de usuario
+        Session::put('user_role', 'Estudiante');
+
+        // =====================================================
+        // 4. GRUPO DEL ALUMNO
+        // =====================================================
+        $idGrupo = $estudiante->id_grupo ?? null;
+
+        // =====================================================
+        // 5. PERIODO ACTIVO
+        // =====================================================
+        $periodoActivo = DB::table('periodo')
+            ->where('activo', 1)
+            ->first();
+
         $periodoActual = Periodo::where('activo', 1)->first();
+
         $nombrePeriodo = 'Sin Periodo Activo';
 
-        // Valores por defecto
+        // =====================================================
+        // 6. VALORES POR DEFECTO
+        // =====================================================
         $totalAsistidas = 0;
         $porcentajeAsistencia = '100%';
         $totalCanalizaciones = 0;
         $tutoriasRecientes = collect();
 
+        // =====================================================
+        // 7. SI EXISTE PERIODO ACTIVO
+        // =====================================================
         if ($periodoActual) {
+
             $nombrePeriodo = $periodoActual->nombre;
+
             $inicio = $periodoActual->fecha_inicio;
             $fin = $periodoActual->fecha_fin;
 
-            // --- 2. OBTENCIÓN DE DATOS (CONSULTAS) ---
-
-            // A. Individuales (Directo del alumno)
-            $tutoriasInd = TutoriaIndividual::where('id_estudiante', $studentId)
+            // =================================================
+            // TUTORÍAS INDIVIDUALES
+            // =================================================
+            $tutoriasInd = TutoriaIndividual::where(
+                    'id_estudiante',
+                    $studentId
+                )
                 ->whereBetween('fecha', [$inicio, $fin])
                 ->with('docente')
                 ->get();
 
-            // B. Grupales (Del grupo del alumno)
-            // Traemos TODAS las sesiones del grupo, y cargamos la asistencia de ESTE alumno si existe
+            // =================================================
+            // TUTORÍAS GRUPALES
+            // =================================================
             $tutoriasGrup = collect();
+
             if ($idGrupo) {
-                $tutoriasGrup = TutoriaGrupal::where('id_grupo', $idGrupo)
+
+                $tutoriasGrup = TutoriaGrupal::where(
+                        'id_grupo',
+                        $idGrupo
+                    )
                     ->whereBetween('fecha', [$inicio, $fin])
                     ->with([
                         'docente',
                         'detalles' => function ($q) use ($studentId) {
-                            // Solo cargamos el detalle de ESTE alumno
-                            $q->where('id_estudiante', $studentId);
+
+                            $q->where(
+                                'id_estudiante',
+                                $studentId
+                            );
                         }
                     ])
                     ->get();
             }
 
+            // =================================================
+            // ESTADÍSTICAS INDIVIDUALES
+            // =================================================
+            $asistidasInd = $tutoriasInd
+                ->where('asistencia', 1)
+                ->count();
 
-            // --- 3. CÁLCULO DE ESTADÍSTICAS ---
+            $evaluablesInd = $tutoriasInd
+                ->whereNotNull('asistencia')
+                ->count();
 
-            // Contadores Individuales
-            $asistidasInd = $tutoriasInd->where('asistencia', 1)->count();
-            $evaluablesInd = $tutoriasInd->whereNotNull('asistencia')->count();
-
-            // Contadores Grupales (Procesando la colección)
+            // =================================================
+            // ESTADÍSTICAS GRUPALES
+            // =================================================
             $asistidasGrup = 0;
             $evaluablesGrup = 0;
 
             foreach ($tutoriasGrup as $tg) {
-                // Obtenemos el registro de asistencia del alumno para esta sesión
+
                 $detalle = $tg->detalles->first();
 
-                if ($detalle && !is_null($detalle->asistencia)) {
-                    $evaluablesGrup++; // Sí se tomó lista
+                if (
+                    $detalle &&
+                    !is_null($detalle->asistencia)
+                ) {
+
+                    $evaluablesGrup++;
+
                     if ($detalle->asistencia == 1) {
-                        $asistidasGrup++; // Y asistió
+                        $asistidasGrup++;
                     }
                 }
             }
 
-            // Totales Finales
-            $totalAsistidas = $asistidasInd + $asistidasGrup;
-            $universoEvaluable = $evaluablesInd + $evaluablesGrup;
+            // =================================================
+            // TOTALES
+            // =================================================
+            $totalAsistidas =
+                $asistidasInd +
+                $asistidasGrup;
 
-            // Porcentaje (Solo sobre lo evaluado)
+            $universoEvaluable =
+                $evaluablesInd +
+                $evaluablesGrup;
+
+            // =================================================
+            // PORCENTAJE
+            // =================================================
             if ($universoEvaluable > 0) {
-                $porcentajeAsistencia = round(($totalAsistidas / $universoEvaluable) * 100) . '%';
+
+                $porcentajeAsistencia =
+                    round(
+                        ($totalAsistidas / $universoEvaluable) * 100
+                    ) . '%';
             }
 
-            // C. Canalizaciones
-            $totalCanalizaciones = Canalizacion::whereHas('tutoria', function ($q) use ($studentId, $inicio, $fin) {
-                $q->where('id_estudiante', $studentId)
-                    ->whereBetween('fecha', [$inicio, $fin]);
-            })->count();
+            // =================================================
+            // CANALIZACIONES
+            // =================================================
+            $totalCanalizaciones =
+                Canalizacion::whereHas(
+                    'tutoria',
+                    function ($q) use (
+                        $studentId,
+                        $inicio,
+                        $fin
+                    ) {
 
+                        $q->where(
+                            'id_estudiante',
+                            $studentId
+                        )
+                        ->whereBetween(
+                            'fecha',
+                            [$inicio, $fin]
+                        );
+                    }
+                )->count();
 
-            // --- 4. LISTA DE ACTIVIDAD RECIENTE ---
+            // =================================================
+            // ACTIVIDAD INDIVIDUAL
+            // =================================================
+            $listaInd = $tutoriasInd->map(
+                function ($t) {
 
-            $listaInd = $tutoriasInd->map(function ($t) {
-                return (object) [
-                    'tipo' => 'Individual',
-                    'tema' => $t->motivo,
-                    'fecha' => $t->fecha,
-                    'tutor' => optional($t->docente)->nombre . ' ' . optional($t->docente)->paterno,
-                    'estado_clase' => is_null($t->asistencia) ? 'warning' : ($t->asistencia == 1 ? 'success' : 'danger'),
-                    'estado_texto' => is_null($t->asistencia) ? 'Pendiente' : ($t->asistencia == 1 ? 'Asistió' : 'Faltó')
-                ];
-            });
+                    return (object) [
 
-            $listaGrup = $tutoriasGrup->map(function ($tg) {
-                $detalle = $tg->detalles->first();
-                $asistencia = $detalle ? $detalle->asistencia : null; // Si no hay detalle, es null (Pendiente)
+                        'tipo' => 'Individual',
 
-                return (object) [
-                    'tipo' => 'Grupal',
-                    'tema' => $tg->tema,
-                    'fecha' => $tg->fecha,
-                    'tutor' => optional($tg->docente)->nombre . ' ' . optional($tg->docente)->paterno,
-                    'estado_clase' => is_null($asistencia) ? 'warning' : ($asistencia == 1 ? 'success' : 'danger'),
-                    'estado_texto' => is_null($asistencia) ? 'Pendiente' : ($asistencia == 1 ? 'Asistió' : 'Faltó'),
-                ];
-            });
+                        'tema' => $t->motivo,
 
-            $tutoriasRecientes = $listaInd->concat($listaGrup)->sortByDesc('fecha')->take(5);
+                        'fecha' => $t->fecha,
+
+                        'tutor' =>
+                            optional($t->docente)->nombre .
+                            ' ' .
+                            optional($t->docente)->paterno,
+
+                        'estado_clase' =>
+                            is_null($t->asistencia)
+                                ? 'warning'
+                                : (
+                                    $t->asistencia == 1
+                                        ? 'success'
+                                        : 'danger'
+                                ),
+
+                        'estado_texto' =>
+                            is_null($t->asistencia)
+                                ? 'Pendiente'
+                                : (
+                                    $t->asistencia == 1
+                                        ? 'Asistió'
+                                        : 'Faltó'
+                                )
+                    ];
+                }
+            );
+
+            // =================================================
+            // ACTIVIDAD GRUPAL
+            // =================================================
+            $listaGrup = $tutoriasGrup->map(
+                function ($tg) {
+
+                    $detalle =
+                        $tg->detalles->first();
+
+                    $asistencia =
+                        $detalle
+                            ? $detalle->asistencia
+                            : null;
+
+                    return (object) [
+
+                        'tipo' => 'Grupal',
+
+                        'tema' => $tg->tema,
+
+                        'fecha' => $tg->fecha,
+
+                        'tutor' =>
+                            optional($tg->docente)->nombre .
+                            ' ' .
+                            optional($tg->docente)->paterno,
+
+                        'estado_clase' =>
+                            is_null($asistencia)
+                                ? 'warning'
+                                : (
+                                    $asistencia == 1
+                                        ? 'success'
+                                        : 'danger'
+                                ),
+
+                        'estado_texto' =>
+                            is_null($asistencia)
+                                ? 'Pendiente'
+                                : (
+                                    $asistencia == 1
+                                        ? 'Asistió'
+                                        : 'Faltó'
+                                )
+                    ];
+                }
+            );
+
+            // =================================================
+            // ÚLTIMAS 5 ACTIVIDADES
+            // =================================================
+            $tutoriasRecientes =
+                $listaInd
+                    ->concat($listaGrup)
+                    ->sortByDesc('fecha')
+                    ->take(5);
         }
 
-        return view('alumno.index', compact(
-            'nombre',
-            'periodoActivo',
-            'totalAsistidas',
-            'porcentajeAsistencia',
-            'totalCanalizaciones',
-            'tutoriasRecientes'
-        ));
+        // =====================================================
+        // 8. VISTA DEL ALUMNO
+        // =====================================================
+        return view(
+            'alumno.index',
+            compact(
+                'nombre',
+                'foto',
+                'periodoActivo',
+                'totalAsistidas',
+                'porcentajeAsistencia',
+                'totalCanalizaciones',
+                'tutoriasRecientes'
+            )
+        );
     }
 
+
     /**
+     * =========================================================
      * PERFIL
+     * =========================================================
      */
     public function perfil()
     {
         $studentId = Session::get('user_id');
-        if (!$studentId)
-            return redirect()->route('login');
 
-        $estudiante = Estudiante::with('grupo')->find($studentId);
-        if (!$estudiante)
+        if (!$studentId) {
             return redirect()->route('login');
-        $periodoActual = Periodo::where('activo', 1)->first();
+        }
 
-        return view('alumno.perfil', compact('estudiante', 'periodoActual'));
+        // =====================================================
+        // OBTENER ESTUDIANTE
+        // =====================================================
+        $estudiante =
+            Estudiante::with('grupo')
+                ->find($studentId);
+
+        if (!$estudiante) {
+
+            Session::flush();
+
+            return redirect()->route('login');
+        }
+
+        // =====================================================
+        // ACTUALIZAR FOTO EN SESIÓN
+        // =====================================================
+        $foto = $estudiante->foto ?? null;
+
+        Session::put('user_photo', $foto);
+
+        // =====================================================
+        // ASEGURAR ROL
+        // =====================================================
+        Session::put('user_role', 'Estudiante');
+
+        // =====================================================
+        // PERIODO
+        // =====================================================
+        $periodoActual =
+            Periodo::where('activo', 1)->first();
+
+        return view(
+            'alumno.perfil',
+            compact(
+                'estudiante',
+                'periodoActual',
+                'foto'
+            )
+        );
     }
 
+
     /**
-     * UPDATE PASSWORD
+     * =========================================================
+     * ACTUALIZAR CONTRASEÑA
+     * =========================================================
      */
-    public function updatePasswordAlumno(Request $request)
-    {
-        $studentId = Session::get('user_id');
-        $estudiante = Estudiante::findOrFail($studentId);
+    public function updatePasswordAlumno(
+        Request $request
+    ) {
 
-        $request->validate([
-            'current_password' => [
-                'required',
-                function ($attribute, $value, $fail) use ($estudiante) {
-                    if (!Hash::check($value, $estudiante->contrasena)) {
-                        $fail('La contraseña actual ingresada no es correcta.');
+        $studentId =
+            Session::get('user_id');
+
+        $estudiante =
+            Estudiante::findOrFail($studentId);
+
+        $request->validate(
+            [
+
+                'current_password' => [
+
+                    'required',
+
+                    function (
+                        $attribute,
+                        $value,
+                        $fail
+                    ) use ($estudiante) {
+
+                        if (
+                            !Hash::check(
+                                $value,
+                                $estudiante->contrasena
+                            )
+                        ) {
+
+                            $fail(
+                                'La contraseña actual ingresada no es correcta.'
+                            );
+                        }
                     }
-                }
-            ],
-            'password' => [
-                'required',
-                'string',
-                'confirmed',
-                Password::min(8)
-                    ->letters()      // Al menos una letra
-                    ->mixedCase()    // Mayúsculas y minúsculas
-                    ->numbers()      // Al menos un número
-                    ->symbols()      // Al menos un símbolo
-                    ->uncompromised(), // Verifica filtraciones en internet
-            ],
-        ], [
-            // --- TRADUCCIONES PARA EL ALUMNO ---
-            'password.required' => 'La nueva contraseña es obligatoria.',
-            'password.confirmed' => 'La confirmación de la contraseña no coincide.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-            'password.letters' => 'La contraseña debe contener al menos una letra.',
-            'password.mixed' => 'La contraseña debe contener mayúsculas y minúsculas.',
-            'password.numbers' => 'La contraseña debe contener al menos un número.',
-            'password.symbols' => 'La contraseña debe contener al menos un símbolo.',
-            'password.uncompromised' => 'Esta contraseña es poco segura por filtraciones externas. Intenta con otra.',
-        ]);
+                ],
 
-        $estudiante->contrasena = Hash::make($request->password);
+                'password' => [
+
+                    'required',
+
+                    'string',
+
+                    'confirmed',
+
+                    Password::min(8)
+                        ->letters()
+                        ->mixedCase()
+                        ->numbers()
+                        ->symbols()
+                        ->uncompromised(),
+                ],
+
+            ],
+            [
+
+                'password.required' =>
+                    'La nueva contraseña es obligatoria.',
+
+                'password.confirmed' =>
+                    'La confirmación de la contraseña no coincide.',
+
+                'password.min' =>
+                    'La contraseña debe tener al menos 8 caracteres.',
+
+                'password.letters' =>
+                    'La contraseña debe contener al menos una letra.',
+
+                'password.mixed' =>
+                    'La contraseña debe contener mayúsculas y minúsculas.',
+
+                'password.numbers' =>
+                    'La contraseña debe contener al menos un número.',
+
+                'password.symbols' =>
+                    'La contraseña debe contener al menos un símbolo.',
+
+                'password.uncompromised' =>
+                    'Esta contraseña es poco segura por filtraciones externas. Intenta con otra.',
+            ]
+        );
+
+        // =====================================================
+        // GUARDAR CONTRASEÑA
+        // =====================================================
+        $estudiante->contrasena =
+            Hash::make(
+                $request->password
+            );
+
         $estudiante->save();
 
-        return back()->with('success', '¡Tu contraseña ha sido actualizada con éxito!');
+        return back()->with(
+            'success',
+            '¡Tu contraseña ha sido actualizada con éxito!'
+        );
     }
+
+
     /**
+     * =========================================================
      * CANALIZACIONES
+     * =========================================================
      */
     public function canalizaciones()
     {
-        $studentId = Session::get('user_id');
-        if (!$studentId)
+        $studentId =
+            Session::get('user_id');
+
+        if (!$studentId) {
             return redirect()->route('login');
-
-        $periodoActual = Periodo::where('activo', 1)->first();
-        $canalizaciones = collect();
-
-        if ($periodoActual) {
-            $inicio = $periodoActual->fecha_inicio;
-            $fin = $periodoActual->fecha_fin;
-
-            $canalizaciones = Canalizacion::whereHas('tutoria', function ($q) use ($studentId, $inicio, $fin) {
-                $q->where('id_estudiante', $studentId)
-                    ->whereBetween('fecha', [$inicio, $fin]);
-            })
-                ->with('area')
-                ->orderBy('fecha', 'desc')
-                ->get()
-                ->map(function ($c) {
-
-                    $clase = 'secondary';
-                    switch ($c->estatus) {
-                        case 'Pendiente':
-                            $clase = 'warning text-dark';
-                            break;
-                        case 'En Proceso':
-                            $clase = 'primary';
-                            break;
-                        case 'Atendido':
-                            $clase = 'success';
-                            break;
-                        case 'Cancelado':
-                            $clase = 'danger';
-                            break;
-                    }
-
-                    return [
-                        'fecha' => $c->fecha,
-                        'area' => optional($c->area)->nombre,
-                        'estatus' => $c->estatus,
-                        'observaciones' => $c->observaciones,
-                        'clase_estatus' => $clase
-                    ];
-                });
         }
 
-        return view('alumno.canalizaciones', compact('canalizaciones', 'periodoActual'));
+        // =====================================================
+        // ACTUALIZAR FOTO DE SESIÓN
+        // =====================================================
+        $estudiante =
+            Estudiante::find($studentId);
+
+        if ($estudiante) {
+
+            Session::put(
+                'user_photo',
+                $estudiante->foto ?? null
+            );
+
+            Session::put(
+                'user_role',
+                'Estudiante'
+            );
+        }
+
+        // =====================================================
+        // PERIODO
+        // =====================================================
+        $periodoActual =
+            Periodo::where('activo', 1)->first();
+
+        $canalizaciones =
+            collect();
+
+        if ($periodoActual) {
+
+            $inicio =
+                $periodoActual->fecha_inicio;
+
+            $fin =
+                $periodoActual->fecha_fin;
+
+            $canalizaciones =
+                Canalizacion::whereHas(
+                    'tutoria',
+                    function ($q) use (
+                        $studentId,
+                        $inicio,
+                        $fin
+                    ) {
+
+                        $q->where(
+                            'id_estudiante',
+                            $studentId
+                        )
+                        ->whereBetween(
+                            'fecha',
+                            [$inicio, $fin]
+                        );
+                    }
+                )
+                ->with('area')
+                ->orderBy(
+                    'fecha',
+                    'desc'
+                )
+                ->get()
+                ->map(
+                    function ($c) {
+
+                        $clase =
+                            'secondary';
+
+                        switch (
+                            $c->estatus
+                        ) {
+
+                            case 'Pendiente':
+
+                                $clase =
+                                    'warning text-dark';
+
+                                break;
+
+                            case 'En Proceso':
+
+                                $clase =
+                                    'primary';
+
+                                break;
+
+                            case 'Atendido':
+
+                                $clase =
+                                    'success';
+
+                                break;
+
+                            case 'Cancelado':
+
+                                $clase =
+                                    'danger';
+
+                                break;
+                        }
+
+                        return [
+
+                            'fecha' =>
+                                $c->fecha,
+
+                            'area' =>
+                                optional(
+                                    $c->area
+                                )->nombre,
+
+                            'estatus' =>
+                                $c->estatus,
+
+                            'observaciones' =>
+                                $c->observaciones,
+
+                            'clase_estatus' =>
+                                $clase
+                        ];
+                    }
+                );
+        }
+
+        return view(
+            'alumno.canalizaciones',
+            compact(
+                'canalizaciones',
+                'periodoActual'
+            )
+        );
     }
 
+
     /**
-     * HISTORIAL COMPLETO
+     * =========================================================
+     * HISTORIAL DE TUTORÍAS
+     * =========================================================
      */
     public function tutorias()
     {
-        $studentId = Session::get('user_id');
-        if (!$studentId)
+        $studentId =
+            Session::get('user_id');
+
+        if (!$studentId) {
             return redirect()->route('login');
+        }
 
-        // Recuperar Grupo
-        $estudiante = Estudiante::find($studentId);
-        $idGrupo = $estudiante ? $estudiante->id_grupo : null;
+        // =====================================================
+        // ACTUALIZAR FOTO DE SESIÓN
+        // =====================================================
+        $estudiante =
+            Estudiante::find($studentId);
 
-        $periodoActual = Periodo::where('activo', 1)->first();
-        $todas = collect();
+        $idGrupo =
+            $estudiante
+                ? $estudiante->id_grupo
+                : null;
+
+        if ($estudiante) {
+
+            Session::put(
+                'user_photo',
+                $estudiante->foto ?? null
+            );
+
+            Session::put(
+                'user_role',
+                'Estudiante'
+            );
+        }
+
+        // =====================================================
+        // PERIODO
+        // =====================================================
+        $periodoActual =
+            Periodo::where('activo', 1)->first();
+
+        $todas =
+            collect();
 
         if ($periodoActual) {
-            $inicio = $periodoActual->fecha_inicio;
-            $fin = $periodoActual->fecha_fin;
 
-            // 1. Individuales
-            $individuales = TutoriaIndividual::where('id_estudiante', $studentId)
-                ->whereBetween('fecha', [$inicio, $fin])
+            $inicio =
+                $periodoActual->fecha_inicio;
+
+            $fin =
+                $periodoActual->fecha_fin;
+
+            // =================================================
+            // INDIVIDUALES
+            // =================================================
+            $individuales =
+                TutoriaIndividual::where(
+                    'id_estudiante',
+                    $studentId
+                )
+                ->whereBetween(
+                    'fecha',
+                    [$inicio, $fin]
+                )
                 ->with('docente')
                 ->get()
-                ->map(function ($t) {
-                    $estado = is_null($t->asistencia) ? 'Pendiente' : ($t->asistencia == 1 ? 'Asistió' : 'Faltó');
-                    $clase = is_null($t->asistencia) ? 'warning' : ($t->asistencia == 1 ? 'success' : 'danger');
+                ->map(
+                    function ($t) {
 
-                    return [
-                        'tipo' => 'Individual',
-                        'tema' => $t->motivo,
-                        'fecha' => $t->fecha,
-                        'tutor' => optional($t->docente)->nombre . ' ' . optional($t->docente)->paterno,
-                        'asistencia' => $estado,
-                        'observaciones' => $t->observaciones ?? 'N/A',
-                        'clase_asistencia' => $clase,
-                    ];
-                });
+                        $estado =
+                            is_null($t->asistencia)
+                                ? 'Pendiente'
+                                : (
+                                    $t->asistencia == 1
+                                        ? 'Asistió'
+                                        : 'Faltó'
+                                );
 
-            // 2. Grupales (Consulta al Grupo + Detalle)
-            $grupales = collect();
-            if ($idGrupo) {
-                $grupales = TutoriaGrupal::where('id_grupo', $idGrupo)
-                    ->whereBetween('fecha', [$inicio, $fin])
-                    ->with([
-                        'docente',
-                        'detalles' => function ($q) use ($studentId) {
-                            $q->where('id_estudiante', $studentId);
-                        }
-                    ])
-                    ->get()
-                    ->map(function ($tg) {
-                        $detalle = $tg->detalles->first();
-                        $asistencia = $detalle ? $detalle->asistencia : null;
-
-                        $estado = is_null($asistencia) ? 'Pendiente' : ($asistencia == 1 ? 'Asistió' : 'Faltó');
-                        $clase = is_null($asistencia) ? 'warning' : ($asistencia == 1 ? 'success' : 'danger');
+                        $clase =
+                            is_null($t->asistencia)
+                                ? 'warning'
+                                : (
+                                    $t->asistencia == 1
+                                        ? 'success'
+                                        : 'danger'
+                                );
 
                         return [
-                            'tipo' => 'Grupal',
-                            'tema' => $tg->tema,
-                            'fecha' => $tg->fecha,
-                            'tutor' => optional($tg->docente)->nombre . ' ' . optional($tg->docente)->paterno,
-                            'asistencia' => $estado,
-                            'observaciones' => $detalle->observaciones ?? 'N/A',
-                            'clase_asistencia' => $clase,
+
+                            'tipo' =>
+                                'Individual',
+
+                            'tema' =>
+                                $t->motivo,
+
+                            'fecha' =>
+                                $t->fecha,
+
+                            'tutor' =>
+                                optional(
+                                    $t->docente
+                                )->nombre .
+                                ' ' .
+                                optional(
+                                    $t->docente
+                                )->paterno,
+
+                            'asistencia' =>
+                                $estado,
+
+                            'observaciones' =>
+                                $t->observaciones
+                                    ?? 'N/A',
+
+                            'clase_asistencia' =>
+                                $clase
                         ];
-                    });
+                    }
+                );
+
+            // =================================================
+            // GRUPALES
+            // =================================================
+            $grupales =
+                collect();
+
+            if ($idGrupo) {
+
+                $grupales =
+                    TutoriaGrupal::where(
+                        'id_grupo',
+                        $idGrupo
+                    )
+                    ->whereBetween(
+                        'fecha',
+                        [$inicio, $fin]
+                    )
+                    ->with([
+
+                        'docente',
+
+                        'detalles' =>
+                            function ($q)
+                            use ($studentId) {
+
+                                $q->where(
+                                    'id_estudiante',
+                                    $studentId
+                                );
+                            }
+                    ])
+                    ->get()
+                    ->map(
+                        function ($tg) {
+
+                            $detalle =
+                                $tg->detalles->first();
+
+                            $asistencia =
+                                $detalle
+                                    ? $detalle->asistencia
+                                    : null;
+
+                            $estado =
+                                is_null($asistencia)
+                                    ? 'Pendiente'
+                                    : (
+                                        $asistencia == 1
+                                            ? 'Asistió'
+                                            : 'Faltó'
+                                    );
+
+                            $clase =
+                                is_null($asistencia)
+                                    ? 'warning'
+                                    : (
+                                        $asistencia == 1
+                                            ? 'success'
+                                            : 'danger'
+                                    );
+
+                            return [
+
+                                'tipo' =>
+                                    'Grupal',
+
+                                'tema' =>
+                                    $tg->tema,
+
+                                'fecha' =>
+                                    $tg->fecha,
+
+                                'tutor' =>
+                                    optional(
+                                        $tg->docente
+                                    )->nombre .
+                                    ' ' .
+                                    optional(
+                                        $tg->docente
+                                    )->paterno,
+
+                                'asistencia' =>
+                                    $estado,
+
+                                'observaciones' =>
+                                    $detalle
+                                        ? (
+                                            $detalle->observaciones
+                                                ?? 'N/A'
+                                        )
+                                        : 'N/A',
+
+                                'clase_asistencia' =>
+                                    $clase
+                            ];
+                        }
+                    );
             }
 
-            $todas = $individuales->concat($grupales)->sortByDesc('fecha')->values();
+            // =================================================
+            // UNIR
+            // =================================================
+            $todas =
+                $individuales
+                    ->concat($grupales)
+                    ->sortByDesc('fecha')
+                    ->values();
         }
 
-        return view('alumno.tutorias', ['tutorias' => $todas, 'periodoActual' => $periodoActual]);
+        return view(
+            'alumno.tutorias',
+            [
+                'tutorias' =>
+                    $todas,
+
+                'periodoActual' =>
+                    $periodoActual
+            ]
+        );
     }
 
-    // Formulario para editar foto -- ALUMNO
+
+    /**
+     * =========================================================
+     * EDITAR FOTO
+     * =========================================================
+     */
     public function editarFoto()
     {
-        $studentId = Session::get('user_id');
-        $estudiante = Estudiante::findOrFail($studentId);
+        $studentId =
+            Session::get('user_id');
 
-        return view('alumno.editar-foto', compact('estudiante'));
-    }
-
-    // Actualizar foto 
-    public function actualizarFoto(Request $request)
-    {
-        $studentId = Session::get('user_id');
-        $estudiante = Estudiante::findOrFail($studentId);
-
-        $request->validate([
-            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ], [
-            'foto.required' => 'Debes seleccionar una imagen.',
-            'foto.image' => 'El archivo debe ser una imagen.',
-            'foto.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg o gif.',
-            'foto.max' => 'La imagen no debe pesar más de 2MB.',
-        ]);
-
-        if ($request->hasFile('foto')) {
-            // Eliminar foto anterior si existe
-            if ($estudiante->foto && file_exists(storage_path('app/public/fotos/estudiantes/' . $estudiante->foto))) {
-                unlink(storage_path('app/public/fotos/estudiantes/' . $estudiante->foto));
-            }
-
-            // Generar nombre del archivo: numero_control + extension
-            $extension = $request->file('foto')->getClientOriginalExtension();
-            $nombreArchivo = $estudiante->num_control . '.' . $extension;
-
-            // Guardar en storage/app/public/fotos/estudiantes/
-            $path = $request->file('foto')->storeAs('fotos/estudiantes', $nombreArchivo, 'public');
-
-            // Actualizar base de datos
-            $estudiante->foto = $nombreArchivo;
-            $estudiante->save();
-            $periodoActual = Periodo::where('activo', 1)->first();
-
-            return view('alumno.editar-foto', compact('estudiante', 'periodoActual'));
+        if (!$studentId) {
+            return redirect()->route('login');
         }
 
-        return back()->with('error', 'No se pudo subir la foto.');
+        $estudiante =
+            Estudiante::findOrFail(
+                $studentId
+            );
+
+        // Mantener foto actualizada
+        Session::put(
+            'user_photo',
+            $estudiante->foto ?? null
+        );
+
+        Session::put(
+            'user_role',
+            'Estudiante'
+        );
+
+        return view(
+            'alumno.editar-foto',
+            compact('estudiante')
+        );
     }
 
-    // ELIMINAR Foto 
 
+    /**
+     * =========================================================
+     * ACTUALIZAR FOTO
+     * =========================================================
+     */
+    public function actualizarFoto(
+        Request $request
+    ) {
+
+        $studentId =
+            Session::get('user_id');
+
+        $estudiante =
+            Estudiante::findOrFail(
+                $studentId
+            );
+
+        // =====================================================
+        // VALIDAR
+        // =====================================================
+        $request->validate(
+            [
+                'foto' =>
+                    'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            ],
+            [
+
+                'foto.required' =>
+                    'Debes seleccionar una imagen.',
+
+                'foto.image' =>
+                    'El archivo debe ser una imagen.',
+
+                'foto.mimes' =>
+                    'La imagen debe ser de tipo: jpeg, png, jpg, gif o webp.',
+
+                'foto.max' =>
+                    'La imagen no debe pesar más de 2MB.',
+            ]
+        );
+
+        // =====================================================
+        // SI EXISTE ARCHIVO
+        // =====================================================
+        if ($request->hasFile('foto')) {
+
+            // =================================================
+            // ELIMINAR FOTO ANTERIOR
+            // =================================================
+            if ($estudiante->foto) {
+
+                $rutaAnterior =
+                    storage_path(
+                        'app/public/fotos/estudiantes/' .
+                        $estudiante->foto
+                    );
+
+                if (
+                    file_exists(
+                        $rutaAnterior
+                    )
+                ) {
+
+                    unlink(
+                        $rutaAnterior
+                    );
+                }
+            }
+
+            // =================================================
+            // OBTENER EXTENSIÓN
+            // =================================================
+            $extension =
+                strtolower(
+                    $request
+                        ->file('foto')
+                        ->getClientOriginalExtension()
+                );
+
+            // =================================================
+            // NOMBRE DEL ARCHIVO
+            // =================================================
+            $nombreArchivo =
+                $estudiante->num_control .
+                '.' .
+                $extension;
+
+            // =================================================
+            // GUARDAR ARCHIVO
+            // =================================================
+            $request
+                ->file('foto')
+                ->storeAs(
+                    'fotos/estudiantes',
+                    $nombreArchivo,
+                    'public'
+                );
+
+            // =================================================
+            // GUARDAR EN BD
+            // =================================================
+            $estudiante->foto =
+                $nombreArchivo;
+
+            $estudiante->save();
+
+            // =================================================
+            // ACTUALIZAR SESIÓN
+            // =================================================
+            Session::put(
+                'user_photo',
+                $nombreArchivo
+            );
+
+            Session::put(
+                'user_role',
+                'Estudiante'
+            );
+
+            // =================================================
+            // REDIRECCIÓN
+            // =================================================
+            return redirect()
+                ->route('alumno.perfil')
+                ->with(
+                    'success',
+                    'Foto actualizada correctamente.'
+                );
+        }
+
+        return back()->with(
+            'error',
+            'No se pudo subir la foto.'
+        );
+    }
+
+
+    /**
+     * =========================================================
+     * ELIMINAR FOTO
+     * =========================================================
+     */
     public function eliminarFoto()
     {
-        $studentId = Session::get('user_id');
-        $estudiante = Estudiante::findOrFail($studentId);
+        $studentId =
+            Session::get('user_id');
 
+        $estudiante =
+            Estudiante::findOrFail(
+                $studentId
+            );
+
+        // =====================================================
+        // SI EXISTE FOTO
+        // =====================================================
         if ($estudiante->foto) {
-            // Eliminar archivo físico
-            $rutaArchivo = storage_path('app/public/fotos/estudiantes/' . $estudiante->foto);
-            if (file_exists($rutaArchivo)) {
-                unlink($rutaArchivo);
+
+            // =================================================
+            // RUTA FÍSICA
+            // =================================================
+            $rutaArchivo =
+                storage_path(
+                    'app/public/fotos/estudiantes/' .
+                    $estudiante->foto
+                );
+
+            // =================================================
+            // ELIMINAR ARCHIVO
+            // =================================================
+            if (
+                file_exists(
+                    $rutaArchivo
+                )
+            ) {
+
+                unlink(
+                    $rutaArchivo
+                );
             }
 
-            // Actualizar BD
+            // =================================================
+            // ELIMINAR DE BD
+            // =================================================
             $estudiante->foto = null;
+
             $estudiante->save();
 
-            return redirect()->route('alumno.perfil')->with('success', 'Foto eliminada correctamente.');
+            // =================================================
+            // ELIMINAR DE SESIÓN
+            // =================================================
+            Session::forget(
+                'user_photo'
+            );
+
+            // Mantener rol
+            Session::put(
+                'user_role',
+                'Estudiante'
+            );
+
+            return redirect()
+                ->route('alumno.perfil')
+                ->with(
+                    'success',
+                    'Foto eliminada correctamente.'
+                );
         }
 
-        return back()->with('error', 'No hay foto para eliminar.');
+        return back()->with(
+            'error',
+            'No hay foto para eliminar.'
+        );
     }
 }

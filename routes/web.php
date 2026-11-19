@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use WhichBrowser\Parser;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\DocenteController;
 use App\Http\Controllers\JefeController;
@@ -13,6 +12,7 @@ use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\CoordinadorInstitucionalController;
 use App\Http\Controllers\ReporteAnexo19Controller;
 use App\Http\Controllers\EncabezadoReporteController;
+use App\Http\Controllers\Jefe\AsesorController;
 
 // --- RUTAS PÚBLICAS ---
 Route::get('/', [MainController::class, 'pagina'])->name('pagina');
@@ -23,20 +23,86 @@ Route::post('/periodos/activar-global', [PeriodoController::class, 'activarGloba
 Route::get('/jefe/alta-docente', [JefeController::class, 'alta_docente'])->name('jefe.alta_docente');
 Route::middleware(['auth.custom'])->group(function () {
 
-    Route::middleware(['rol:estudiante'])->group(function () {
-        Route::get('/alumno', [AlumnoController::class, 'inicioalumno'])->name('alumno.index');
-        Route::get('/alumno-canalizaciones', [AlumnoController::class, 'canalizaciones'])->name('alumno.canalizaciones');
-        Route::get('/alumno-tutorias', [AlumnoController::class, 'tutorias'])->name('alumno.tutorias');
-        Route::get('/alumno/perfil', [AlumnoController::class, 'perfil'])->name('alumno.perfil');
-        Route::post('/alumno/perfil/actualizar-password', [AlumnoController::class, 'updatePasswordAlumno'])->name('alumno.perfil.update_password');
+Route::middleware(['rol:estudiante'])->group(function () {
 
-        // Rutas de perfil - ALUMNO - FOTO
-        Route::get('/alumno/perfil/editar-foto', [AlumnoController::class, 'editarFoto'])->name('alumno.perfil.editar-foto');
-        Route::post('/alumno/perfil/actualizar-foto', [AlumnoController::class, 'actualizarFoto'])->name('alumno.perfil.actualizar-foto');
-        Route::post('/alumno/perfil/eliminar-foto', [AlumnoController::class, 'eliminarFoto'])->name('alumno.perfil.eliminar-foto');
-    });
+    // Inicio del alumno
+    Route::get('/alumno', [AlumnoController::class, 'inicioalumno'])
+        ->name('alumno.index');
+
+    // Canalizaciones
+    Route::get('/alumno-canalizaciones', [AlumnoController::class, 'canalizaciones'])
+        ->name('alumno.canalizaciones');
+
+    // Tutorías
+    Route::get('/alumno-tutorias', [AlumnoController::class, 'tutorias'])
+        ->name('alumno.tutorias');
+
+    // Perfil del alumno
+    Route::get('/alumno/perfil', [AlumnoController::class, 'perfil'])
+        ->name('alumno.perfil');
+
+    // Actualizar contraseña
+    Route::post('/alumno/perfil/actualizar-password', [AlumnoController::class, 'updatePasswordAlumno'])
+        ->name('alumno.perfil.update_password');
+
+    // Editar foto de perfil
+    Route::get('/alumno/perfil/editar-foto', [AlumnoController::class, 'editarFoto'])
+        ->name('alumno.perfil.editar-foto');
+
+    // Actualizar foto
+    Route::post('/alumno/perfil/actualizar-foto', [AlumnoController::class, 'actualizarFoto'])
+        ->name('alumno.perfil.actualizar-foto');
+
+    // Eliminar foto
+    Route::post('/alumno/perfil/eliminar-foto', [AlumnoController::class, 'eliminarFoto'])
+        ->name('alumno.perfil.eliminar-foto');
+
+    // Prototipo visual de asesorías académicas para el alumno
+    Route::get('/alumno-asesorias', function () {
+        return view('alumno.asesorias');
+    })->name('alumno.asesorias');
+
+    Route::get('/alumno-asesorias', [
+    AsesorController::class,
+    'catalogo'
+])->name('alumno.asesorias');
+
+});
 
     Route::middleware(['auth.custom', 'rol:Jefe'])->group(function () {
+        // Prototipo visual de asesorías académicas
+       
+
+    Route::get('/Jefe-Asesorias', [
+        AsesorController::class,
+        'index'
+    ])->name('jefe.asesorias');
+
+    Route::post('/Jefe-Asesorias/asesores', [
+        AsesorController::class,
+        'store'
+    ])->name('jefe.asesores.store');
+
+    Route::get('/Jefe-Asesorias/asesores/{asesor}', [
+        AsesorController::class,
+        'show'
+    ])->name('jefe.asesores.show');
+
+    Route::put('/Jefe-Asesorias/asesores/{asesor}', [
+        AsesorController::class,
+        'update'
+    ])->name('jefe.asesores.update');
+
+    Route::patch('/Jefe-Asesorias/asesores/{asesor}/estado', [
+        AsesorController::class,
+        'desactivar'
+    ])->name('jefe.asesores.desactivar');
+
+    Route::delete(
+    '/Jefe-Asesorias/asesores/{asesor}',
+    [AsesorController::class, 'destroy']
+)->name('jefe.asesores.destroy');
+
 
         // 1. INICIO
         Route::get('/Jefe', [JefeController::class, 'inicio'])->name('jefe.index');
@@ -92,9 +158,10 @@ Route::middleware(['auth.custom'])->group(function () {
     Route::middleware(['rol:Coordinador'])->group(function () {
         Route::get('/Coordinador', [CoordinadorController::class, 'inicio'])->name('coord.index');
         Route::get('/Coordinador-informes', [CoordinadorController::class, 'informes'])->name('coord.informes');
+        Route::post('/Coordinador-informes', [CoordinadorController::class, 'subirInforme'])->name('coord.informes.subir');
         Route::get('/Coordinador-reportes', [CoordinadorController::class, 'reportes'])->name('coord.reportes');
         Route::get('/coordinador-seguimiento', [CoordinadorController::class, 'seguimiento'])->name('coord.seguimiento');
-        Route::get('/coordinador/perfil', [CoordinadorController::class, 'viewPerfil'])->name('coordinador.perfil.view'); // Usado en el subnav
+         Route::get('/coordinador/perfil', [CoordinadorController::class, 'viewPerfil'])->name('coordinador.perfil.view'); // Usado en el subnav
         Route::post('/coordinador/perfil/actualizar-password', [CoordinadorController::class, 'updatePassword'])->name('coordinador.perfil.update_password'); // Usado en el formulario de la vista perfil.blade.php
 
         // Rutas de perfil - COORDINADOR - FOTO
@@ -111,15 +178,25 @@ Route::middleware(['auth.custom'])->group(function () {
         Route::get('/docente', [DocenteController::class, 'docente'])->name('docente.index');
         Route::get('/docente/tutorias', [DocenteController::class, 'viewTutorias'])->name('docente.tutorias');
         Route::post('/docente/tutorias', [DocenteController::class, 'storeTutoria'])->name('docente.store_tutoria');
-        Route::get('/docente/canalizaciones', [DocenteController::class, 'viewCanalizaciones'])->name('docente.canalizaciones');
-        Route::post('/docente/canalizaciones', [DocenteController::class, 'storeCanalizacion'])->name('docente.store_canalizacion');
-        Route::put('/docente/canalizaciones/{id}', [DocenteController::class, 'updateCanalizacionStatus'])->name('docente.update_canalizacion');
+        
+        Route::get(
+            '/docente/canalizaciones',
+            [DocenteController::class, 'viewCanalizaciones']
+        )->name('docente.canalizaciones');
+
+        Route::post(
+            '/docente/canalizaciones',
+            [DocenteController::class, 'storeCanalizacion']
+        )->name('docente.store_canalizacion');
+
+        Route::put(
+            '/docente/canalizaciones/{id}',
+            [DocenteController::class, 'updateCanalizacion']
+        )->name('docente.update_canalizacion');
+
         Route::get('/docente/perfil', [DocenteController::class, 'viewPerfil'])->name('docente.perfil.view');
         Route::post('/docente/perfil/actualizar-password', [DocenteController::class, 'updatePassword'])->name('docente.perfil.update_password');
-        Route::post('/Docente-Tutorias/Update', [DocenteController::class, 'updateTutoria'])->name('docente.update_tutoria');
         Route::post('/docente/tutorias/update', [DocenteController::class, 'updateTutoria'])->name('docente.update_tutoria');
-        Route::post('/docente/canalizaciones/update', [DocenteController::class, 'updateCanalizacion'])->name('docente.update_canalizacion');
-        Route::put('/docente/canalizaciones/{id}', [DocenteController::class, 'updateCanalizacion'])->name('docente.update_canalizacion');
 
         // Rutas de perfil - DOCENTE - FOTO
         Route::get('/docente/perfil/editar-foto', [DocenteController::class, 'editarFoto'])->name('docente.editar-foto');
@@ -141,6 +218,11 @@ Route::middleware(['auth.custom'])->group(function () {
         // 1. INICIO
         Route::get('/Soporte', [SoporteController::class, 'inicio'])->name('soporte.index');
 
+
+        // Prototipo visual de asesorías académicas
+        Route::get('/Soporte-Asesorias', function () {
+            return view('jefe.asesorias');
+        })->name('soporte.asesorias');
         // 2. SECCIÓN: GESTIÓN DE ALUMNOS
         Route::get('/Soporte-Alumnos', [SoporteController::class, 'alta_alumno'])->name('soporte.alumnos');
         Route::post('/Soporte-Alumnos/guardar', [SoporteController::class, 'guardar_alumno'])->name('soporte.guardar_alumno');
@@ -167,15 +249,7 @@ Route::middleware(['auth.custom'])->group(function () {
         Route::post('/firmas/store', [App\Http\Controllers\FirmaReporteController::class, 'store'])->name('firmas.store');
         Route::delete('/firmas/eliminar/{id}', [App\Http\Controllers\FirmaReporteController::class, 'destroy'])->name('firmas.destroy');
 
-        // ENCABEZADOS PARA SOPORTE
-
-
-        Route::middleware(['auth.custom'])->group(function () {
-            Route::get('/encabezados', [App\Http\Controllers\EncabezadoReporteController::class, 'index'])->name('encabezados.index');
-            Route::post('/encabezados/subir', [App\Http\Controllers\EncabezadoReporteController::class, 'subir'])->name('encabezados.subir');
-            Route::delete('/encabezados/eliminar/{id}', [App\Http\Controllers\EncabezadoReporteController::class, 'eliminar'])->name('encabezados.eliminar');
-            Route::post('/encabezados/activar/{id}', [App\Http\Controllers\EncabezadoReporteController::class, 'activar'])->name('encabezados.activar');
-        });
+        // Las rutas de encabezados se declaran una sola vez más abajo.
     });
 
     // ==========================================
@@ -191,9 +265,6 @@ Route::middleware(['auth.custom'])->group(function () {
 
 // RUTA PARA CAMBIAR PERIODO ACTIVO (USADA EN EL SUBNAV)
 Route::post('/cambiar-periodo', [App\Http\Controllers\PeriodoController::class, 'cambiarPeriodo'])->name('periodo.cambiar');
-Route::post('/activar-periodo', [App\Http\Controllers\PeriodoController::class, 'activarGlobal'])->name('periodo.activar.global');
-Route::post('/Jefe-Periodos/guardar', [JefeController::class, 'storePeriodo'])->name('jefe.guardar_periodo');
-Route::post('/activar-periodo', [JefeController::class, 'activarGlobal'])->name('periodo.activar.global');
 
 
 // RUTAS PARA COORDINADOR INSTITUCIONAL

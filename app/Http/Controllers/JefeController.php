@@ -18,11 +18,20 @@ use Illuminate\Validation\Rules\Password;
 class JefeController extends Controller
 {
     public function inicio()
-    {
-        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
-        return view('jefe.index', compact('periodoActivo'));
+{
+    $periodoActivo = DB::table('periodo')
+        ->where('activo', 1)
+        ->first();
 
-    }
+    $idUsuario = Session::get('user_id');
+
+    $usuario = Docente::findOrFail($idUsuario);
+
+    return view('jefe.index', compact(
+        'periodoActivo',
+        'usuario'
+    ));
+}
 
     // ==========================================
     // 1. SECCIÓN: GESTIÓN DE ALUMNOS

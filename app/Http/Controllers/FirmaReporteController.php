@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use App\Models\FirmaReporte;
+use App\Models\Periodo;
 
 class FirmaReporteController extends Controller
 {
     public function index()
     {
+        $periodoActivo = Periodo::where('activo', 1)->first();
+
         $userRole = Session::get('user_role');
         if ($userRole != 'Soporte') {
             return redirect('/')->with('error', 'No tienes permiso');
@@ -23,7 +26,7 @@ class FirmaReporteController extends Controller
             ->orderBy('orden')
             ->get();
         
-        return view('reportes.firmas', compact('firmasJefe', 'firmasCoordinador'));
+        return view('reportes.firmas', compact('periodoActivo','firmasJefe', 'firmasCoordinador'));
     }
     
     public function store(Request $request)

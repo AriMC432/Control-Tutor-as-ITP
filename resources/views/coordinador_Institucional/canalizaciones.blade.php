@@ -1,75 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Metricas de Canalizaciones')
+@section('title', 'Metricas de canalizaciones')
 
 @includeWhen(true, 'coordinador_institucional._subnav')
 
 @section('content')
-<<<<<<< HEAD
-    <div class="card p-3">
-        @if($periodoActivo)
-            <span class="badge bg-info fs-5 p-2 shadow-sm">
-                <i class="bi bi-calendar-check me-1"></i> Periodo activo: {{ $periodoActivo->nombre }}
-            </span>
-        @endif
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-1">Lista de Canalizaciones</h5>
-                <div class="text-muted">Todas las canalizaciones realizadas a estudiantes</div>
-            </div>
-        </div>
-        <hr>
-
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Fecha</th>
-                        <th>Estudiante</th>
-                        <th>Área</th>
-                        <th>Estatus</th>
-                        <th>Observaciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($canalizaciones as $index => $c)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $c->fecha }}</td>
-                            <td>{{ $c->tutoria->estudiante->nombre ?? 'N/A' }} {{ $c->tutoria->estudiante->paterno ?? '' }}</td>
-                            <td>{{ $c->area->nombre ?? 'N/A' }}</td>
-                            <td>
-                                <span class="badge 
-                                    @if($c->estatus == 'Atendido') bg-success
-                                    @elseif($c->estatus == 'En Proceso') bg-warning
-                                    @else bg-secondary
-                                    @endif">
-                                    {{ $c->estatus ?? 'Pendiente' }}
-                                </span>
-                            </td>
-                            <td>{{ $c->observaciones ?? 'N/A' }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center">No hay canalizaciones registradas.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-=======
 <div class="container-fluid px-0">
     {{-- encabezado --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-semibold mb-1" style="color: #1a3a6b;">Metricas de Canalizaciones</h4>
-            <p class="text-muted small mb-0">Estadisticas institucionales</p>
+            <h4 class="fw-semibold mb-1" style="color: #1a3a6b;">Métricas de canalizaciones</h4>
+            <p class="text-muted small mb-0">Estadísticas institucionales</p>
         </div>
-        @if($periodoActivo)
-            <span class="badge px-3 py-2" style="background-color: #1a3a6b; color: white;">
-                <i class="bi bi-calendar3 me-1"></i> {{ $periodoActivo->nombre }}
-            </span>
-        @endif
+     
     </div>
 
     {{-- tarjetas de metricas principales --}}
@@ -81,7 +24,7 @@
                         <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background-color: rgba(26, 58, 107, 0.1);">
                             <i class="bi bi-send fs-4" style="color: #1a3a6b;"></i>
                         </div>
-                        <span class="badge bg-light text-secondary">total</span>
+                        <span class="badge bg-light text-secondary">Total</span>
                     </div>
                     <h2 class="fw-bold mb-0" style="color: #1a3a6b;">{{ $totalCanalizaciones }}</h2>
                     <p class="text-muted small mt-2 mb-0">Canalizaciones realizadas</p>
@@ -96,10 +39,10 @@
                         <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background-color: rgba(26, 58, 107, 0.1);">
                             <i class="bi bi-check-circle-fill fs-4" style="color: #28a745;"></i>
                         </div>
-                        <span class="badge bg-light text-secondary">atendidas</span>
+                        <span class="badge bg-light text-secondary">Completadas</span>
                     </div>
                     <h2 class="fw-bold mb-0" style="color: #28a745;">{{ $atendidas }}</h2>
-                    <p class="text-muted small mt-2 mb-0">Canalizaciones atendidas</p>
+                    <p class="text-muted small mt-2 mb-0">Canalizaciones resueltas o completadas</p>
                 </div>
             </div>
         </div>
@@ -111,7 +54,7 @@
                         <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background-color: rgba(26, 58, 107, 0.1);">
                             <i class="bi bi-clock-history fs-4" style="color: #ffc107;"></i>
                         </div>
-                        <span class="badge bg-light text-secondary">proceso</span>
+                        <span class="badge bg-light text-secondary">Proceso</span>
                     </div>
                     <h2 class="fw-bold mb-0" style="color: #ffc107;">{{ $enProceso }}</h2>
                     <p class="text-muted small mt-2 mb-0">En proceso</p>
@@ -126,10 +69,10 @@
                         <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background-color: rgba(26, 58, 107, 0.1);">
                             <i class="bi bi-hourglass-split fs-4" style="color: #6c757d;"></i>
                         </div>
-                        <span class="badge bg-light text-secondary">pendientes</span>
+                        <span class="badge bg-light text-secondary">Pendientes</span>
                     </div>
                     <h2 class="fw-bold mb-0" style="color: #6c757d;">{{ $pendientes }}</h2>
-                    <p class="text-muted small mt-2 mb-0">Pendientes de atencion</p>
+                    <p class="text-muted small mt-2 mb-0">Pendientes de atención</p>
                 </div>
             </div>
         </div>
@@ -141,13 +84,13 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="fw-semibold mb-0" style="color: #1a3a6b;">Tasa de Atencion</h6>
+                        <h6 class="fw-semibold mb-0" style="color: #1a3a6b;">Tasa de atención</h6>
                         <span class="fw-bold" style="color: #1a3a6b;">{{ $tasaAtencion }}%</span>
                     </div>
                     <div class="progress" style="height: 10px;">
                         <div class="progress-bar" role="progressbar" style="width: {{ $tasaAtencion }}%; background-color: #1a3a6b;" aria-valuenow="{{ $tasaAtencion }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
-                    <p class="text-muted small mt-2 mb-0">Porcentaje de canalizaciones que han sido atendidas</p>
+                    <p class="text-muted small mt-2 mb-0">Porcentaje de canalizaciones que han sido completadas o resueltas</p>
                 </div>
             </div>
         </div>
@@ -156,17 +99,17 @@
     {{-- tabla de canalizaciones por area --}}
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-0 pt-4 pb-0">
-            <h5 class="fw-semibold" style="color: #1a3a6b;">Canalizaciones por Area</h5>
-            <p class="text-muted small">Distribucion por area de atencion especializada</p>
+            <h5 class="fw-semibold" style="color: #1a3a6b;">Canalizaciones por área</h5>
+            <p class="text-muted small">Distribución por área de atencion especializada</p>
         </div>
         <div class="card-body p-4">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead style="background-color: #f5f7fa;">
                         <tr>
-                            <th class="py-3 ps-3" style="color: #1a3a6b; font-weight: 600;">Area</th>
+                            <th class="py-3 ps-3" style="color: #1a3a6b; font-weight: 600;">Área</th>
                             <th class="py-3 text-center" style="color: #1a3a6b; font-weight: 600;">Canalizaciones</th>
-                            <th class="py-3 text-center" style="color: #1a3a6b; font-weight: 600;">Participacion</th>
+                            <th class="py-3 text-center" style="color: #1a3a6b; font-weight: 600;">Porcentaje</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -202,9 +145,9 @@
         <div class="card-footer bg-white border-0 pb-4 pt-0">
             <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted">Total general: {{ $totalCanalizaciones }} canalizaciones</small>
-                <small class="text-muted">Tasa de atencion: {{ $tasaAtencion }}%</small>
+                <small class="text-muted">Tasa de atención: {{ $tasaAtencion }}%</small>
             </div>
->>>>>>> 00d5eac3cdbe3cdd50cc5713bb46c71fbc2c9093
         </div>
     </div>
+</div>
 @endsection

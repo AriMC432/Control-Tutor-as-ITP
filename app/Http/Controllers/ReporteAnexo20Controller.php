@@ -140,10 +140,10 @@ class ReporteAnexo20Controller extends Controller
                 $q->where('id_docente', $docente->id_docente)
                     ->whereBetween('fecha', [$periodo->fecha_inicio, $periodo->fecha_fin]);
             })->with('area')->get()
-              ->pluck('area.nombre')
-              ->unique()
-              ->filter()
-              ->count();
+                ->pluck('area.nombre')
+                ->unique()
+                ->filter()
+                ->count();
 
             // contar canalizaciones por area (para indicadores)
             $canalizaciones = Canalizacion::whereHas('tutoria', function ($q) use ($docente, $periodo) {
@@ -171,6 +171,7 @@ class ReporteAnexo20Controller extends Controller
                 'tutorias_grupales' => $tutoriasGrupales,
                 'tutorias_individuales' => $tutoriasIndividuales,
                 'total_tutorias' => $totalTutoriasDocente,
+                'estudiantes_atendidos' => $estudiantesAtendidos,
                 'estudiantes_canalizados' => $estudiantesCanalizados,
                 'areas_canalizadas' => $areasCanalizadas ?: 'Ninguna'
             ];
@@ -211,6 +212,12 @@ class ReporteAnexo20Controller extends Controller
         $porcentajeBecas = $totalEstudiantesSistema > 0 ? round(($canalizacionesBecas / $totalEstudiantesSistema) * 100, 1) : 0;
         $porcentajeAcademica = $totalEstudiantesSistema > 0 ? round(($canalizacionesAcademica / $totalEstudiantesSistema) * 100, 1) : 0;
 
+
+        $totalEstudiantesCanalizados = 0;
+        foreach ($datosDocentes as $d) {
+            $totalEstudiantesCanalizados += $d->estudiantes_canalizados;
+        }
+
         // guardar en base de datos ---- IMPORTANTISIMOOOOO para q no lo olvide
         ReporteAnexo20::updateOrCreate(
             [
@@ -243,6 +250,7 @@ class ReporteAnexo20Controller extends Controller
             'totalTutorias',
             'totalCanalizaciones',
             'totalEstudiantesAtendidos',
+            'totalEstudiantesCanalizados',
             'canalizacionesPsicologica',
             'canalizacionesExtraescolares',
             'canalizacionesBecas',

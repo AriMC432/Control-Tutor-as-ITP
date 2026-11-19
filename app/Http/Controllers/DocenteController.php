@@ -25,64 +25,91 @@ class DocenteController extends Controller
     /**
      * 1. DASHBOARD PRINCIPAL
      */
-    public function docente()
-    {
-        $idDocente = Session::get('user_id');
-        $periodoActual = Periodo::where('activo', 1)->first();
-        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
-        if (!$periodoActual) {
-            return view('docente.index', [
-                'grupos' => [],
-                'tutorias' => collect(),
-                'error' => 'No hay periodo escolar activo configurado en el sistema.'
-            ]);
-        }
+ public function docente()
+{
+    $idDocente = Session::get('user_id');
 
-        $fechaInicio = $periodoActual->fecha_inicio;
-        $fechaFin = $periodoActual->fecha_fin;
+    // Obtener los datos completos del docente, incluida su foto
+    $usuario = Docente::with('rol')->findOrFail($idDocente);
 
-        // A. Grupos del periodo actual
-        $grupos = Grupo::where('id_docente', $idDocente)
-            ->where('id_periodo', $periodoActual->id_periodo)
-            ->with('carrera')
-            ->get();
+    // Obtener periodo actual
+    $periodoActual = Periodo::where('activo', 1)->first();
 
-        // B. Historial (Dashboard)
-        $grupales = TutoriaGrupal::where('id_docente', $idDocente)
-            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->get()
-            ->map(function ($t) {
-                $grupo = Grupo::find($t->id_grupo);
-                return (object)[
-                    'fecha' => $t->fecha,
-                    'hora'  => $t->hora,
-                    'tema'  => $t->tema,
-                    'tipo'  => 'Grupal',
-                    'info'  => $grupo ? $grupo->nombre : 'Grupo N/A',
-                    'orden' => $t->fecha . ' ' . $t->hora
-                ];
-            });
+    $periodoActivo = DB::table('periodo')
+        ->where('activo', 1)
+        ->first();
 
-        $individuales = TutoriaIndividual::where('id_docente', $idDocente)
-            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->with('estudiante')
-            ->get()
-            ->map(function ($t) {
-                $nombreEstudiante = $t->estudiante ? $t->estudiante->nombre . ' ' . $t->estudiante->paterno : 'Alumno N/A';
-                return (object)[
-                    'fecha' => $t->fecha,
-                    'hora'  => $t->hora,
-                    'tema'  => $t->motivo,
-                    'tipo'  => 'Individual',
-                    'info'  => $nombreEstudiante,
-                    'orden' => $t->fecha . ' ' . $t->hora
-                ];
-            });
-
-        $tutorias = $grupales->concat($individuales)->sortByDesc('orden')->take(10);
-
-        return view('docente.index', compact('grupos', 'tutorias', 'periodoActual', 'periodoActivo'));
+    if (!$periodoActual) {
+        return view('docente.index', [
+            'grupos' => [],
+            'tutorias' => collect(),
+            'usuario' => $usuario,
+            'periodoActual' => null,
+            'periodoActivo' => $periodoActivo,
+            'error' => 'No hay periodo escolar activo configurado en el sistema.'
+        ]);
     }
+
+    $fechaInicio = $periodoActual->fecha_inicio;
+    $fechaFin = $periodoActual->fecha_fin;
+
+    // A. Grupos del periodo actual
+    $grupos = Grupo::where('id_docente', $idDocente)
+        ->where('id_periodo', $periodoActual->id_periodo)
+        ->with('carrera')
+        ->get();
+
+    // B. Historial del dashboard
+    $grupales = TutoriaGrupal::where('id_docente', $idDocente)
+        ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+        ->get()
+        ->map(function ($t) {
+
+            $grupo = Grupo::find($t->id_grupo);
+
+            return (object) [
+                'fecha' => $t->fecha,
+                'hora'  => $t->hora,
+                'tema'  => $t->tema,
+                'tipo'  => 'Grupal',
+                'info'  => $grupo ? $grupo->nombre : 'Grupo N/A',
+                'orden' => $t->fecha . ' ' . $t->hora
+            ];
+        });
+
+    $individuales = TutoriaIndividual::where('id_docente', $idDocente)
+        ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+        ->with('estudiante')
+        ->get()
+        ->map(function ($t) {
+
+            $nombreEstudiante = $t->estudiante
+                ? $t->estudiante->nombre . ' ' . $t->estudiante->paterno
+                : 'Alumno N/A';
+
+            return (object) [
+                'fecha' => $t->fecha,
+                'hora'  => $t->hora,
+                'tema'  => $t->motivo,
+                'tipo'  => 'Individual',
+                'info'  => $nombreEstudiante,
+                'orden' => $t->fecha . ' ' . $t->hora
+            ];
+        });
+
+    $tutorias = $grupales
+        ->concat($individuales)
+        ->sortByDesc('orden')
+        ->take(10);
+
+    return view('docente.index', compact(
+        'grupos',
+        'tutorias',
+        'periodoActual',
+        'periodoActivo',
+        'usuario'
+    ));
+}
 
     /**
      * 2. VISTA: AGENDAR Y GESTIONAR TUTORÍAS

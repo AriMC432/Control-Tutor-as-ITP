@@ -89,42 +89,42 @@
 
 <body>
 
-       {{-- encabezado con imagen desde base de datos --}}
+    {{-- encabezado con imagen desde base de datos --}}
     @php
-        $idPeriodo = \App\Models\Periodo::where('nombre', $coordinador['periodo'])->first()->id_periodo ?? null;
+    $idPeriodo = \App\Models\Periodo::where('nombre', $coordinador['periodo'])->first()->id_periodo ?? null;
 
-        // buscar encabezado SOLO para anexo 20
-        $encabezado = null;
-        if ($idPeriodo) {
-            $encabezado = \App\Models\EncabezadoReporte::where('id_periodo', $idPeriodo)
-                ->where('tipo_reporte', 'anexo20')
-                ->where('activo', true)
-                ->first();
-        }
+    // buscar encabezado SOLO para anexo 20
+    $encabezado = null;
+    if ($idPeriodo) {
+    $encabezado = \App\Models\EncabezadoReporte::where('id_periodo', $idPeriodo)
+    ->where('tipo_reporte', 'anexo20')
+    ->where('activo', true)
+    ->first();
+    }
 
-        // si no hay encabezado para anexo 20 en este periodo, buscar uno global (sin periodo)
-        if (!$encabezado) {
-            $encabezado = \App\Models\EncabezadoReporte::whereNull('id_periodo')
-                ->where('tipo_reporte', 'anexo20')
-                ->where('activo', true)
-                ->first();
-        }
+    // si no hay encabezado para anexo 20 en este periodo, buscar uno global (sin periodo)
+    if (!$encabezado) {
+    $encabezado = \App\Models\EncabezadoReporte::whereNull('id_periodo')
+    ->where('tipo_reporte', 'anexo20')
+    ->where('activo', true)
+    ->first();
+    }
 
-        $rutaImagen = $encabezado 
-            ? public_path('storage/' . $encabezado->ruta_imagen) 
-            : null;
+    $rutaImagen = $encabezado
+    ? public_path('storage/' . $encabezado->ruta_imagen)
+    : null;
     @endphp
 
     @if($rutaImagen && file_exists($rutaImagen))
-        <div class="encabezado">
-            <img src="{{ $rutaImagen }}" alt="Encabezado institucional" style="max-width: 100%;">
-        </div>
+    <div class="encabezado">
+        <img src="{{ $rutaImagen }}" alt="Encabezado institucional" style="max-width: 100%;">
+    </div>
     @else
-        <div class="encabezado">
-            <h3>Instituto Tecnologico de Pachuca</h3>
-            <h4>Reporte Semestral del Coordinador de Tutoria</h4>
-            <h4>Anexo 20</h4>
-        </div>
+    <div class="encabezado">
+        <h3>Instituto Tecnologico de Pachuca</h3>
+        <h4>Reporte Semestral del Coordinador de Tutoria</h4>
+        <h4>Anexo 20</h4>
+    </div>
     @endif
 
     {{-- informacion del coordinador y carrera --}}
@@ -165,17 +165,17 @@
                 <td class="text-center">{{ $docente->tutorias_grupales }}</td>
                 <td class="text-center">{{ $docente->tutorias_individuales }}</td>
                 <td class="text-center"><strong>{{ $docente->estudiantes_canalizados }}</strong></td>
-                <td class="text-center">{{  $docente->areas_canalizadas ?? 'Ninguna' }}</td>
+                <td class="text-center">{{ $docente->areas_canalizadas ?? 'Ninguna' }}</td>
             </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr style="background-color: #FFF1CC;">
                 <td colspan="2" class="text-center"><strong>TOTALES</strong></td>
-                <td class="text-center"><strong>{{ $totalTutorias }}</strong></td>
+                <td class="text-center"><strong>{{ $totalTutorias ?? 0 }}</strong></td>
                 <td class="text-center">—</td>
-                <td class="text-center"><strong>{{ $totalTutorias }}</strong></td>
-                <td class="text-center"><strong>{{ $totalCanalizaciones }}</strong></td>
+                <td class="text-center"><strong>{{ $totalEstudiantesCanalizados ?? 0 }}</strong></td>
+                <td class="text-center"><strong>{{ $totalCanalizaciones ?? 0 }}</strong></td>
             </tr>
         </tfoot>
     </table>

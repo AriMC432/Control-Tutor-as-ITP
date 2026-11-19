@@ -2,15 +2,11 @@
 
 @section('title', 'Seguimiento a tutores')
 
-@includeWhen(true, 'coordinador._subnav')
-
 @section('content')
+
+    @includeWhen(true, 'coordinador._subnav')
   <div class="card p-3">
-      @if($periodoActual)
-        <span class="badge bg-info fs-5 p-2 shadow-sm">
-          <i class="bi bi-calendar-check me-1"></i> Periodo activo: {{ $periodoActual->nombre }}
-        </span>
-      @endif
+ 
     <div class="d-flex justify-content-between align-items-center">
       <div>
         <h5 class="mb-1">Seguimiento a tutores</h5>
@@ -43,24 +39,42 @@
             <th>Acciones</th>
           </tr>
         </thead>
+        
         <tbody>
-          {{-- @foreach($seguimiento as $s) --}}
-          <tr>
-            <td>—</td>
-            <td>—</td>
-            <td>0</td>
-            <td>0%</td>
-            <td>—</td>
-            <td><span class="badge bg-secondary">Pendiente</span></td>
-            <td>
-              <div class="btn-group btn-group-sm">
-                <a href="#" class="btn btn-outline">Detalle</a>
-                <a href="#" class="btn btn-success">Solicitar informe</a>
-              </div>
-            </td>
-          </tr>
-          {{-- @endforeach --}}
+            @forelse($seguimiento as $s)
+                <tr>
+                    <td>{{ $s->tutor }}</td>
+                    <td>{{ $s->grupo }}</td>
+                    <td>{{ $s->tutorias_mes }}</td>
+                    <td>{{ $s->asistencia_prom }}%</td>
+                    <td>{{ $s->ultima_sesion }}</td>
+                    <td>
+                        @if($s->estado === 'Activo')
+                            <span class="badge bg-success">Activo</span>
+                        @else
+                            <span class="badge bg-secondary">Pendiente</span>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="#" class="btn btn-outline-secondary">
+                                Detalle
+                            </a>
+                            <a href="#" class="btn btn-success">
+                                Solicitar informe
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        No hay grupos registrados para el periodo escolar activo.
+                    </td>
+                </tr>
+            @endforelse
         </tbody>
+
       </table>
     </div>
   </div>

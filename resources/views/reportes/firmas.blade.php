@@ -3,33 +3,31 @@
 @section('title', 'Gestion de firmas para reportes')
 
 @php
-    $userRole = session('user_role');
+$userRole = session('user_role');
 @endphp
 
 @if($userRole == 'Soporte')
-    @include('soporte._subnav')
+@include('soporte._subnav')
 @endif
 
 @section('content')
-<div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-10">
-            
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h4 class="fw-semibold mb-1" style="color: #1a3a6b;">Gestion de firmas</h4>
                     <p class="text-muted small mb-0">Administrar las personas que firman los reportes anexo 19 y 20</p>
                 </div>
             </div>
-            
+
             {{-- mensajes --}}
             @if(session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
+            <div class="alert alert-success">{{ session('success') }}</div>
             @endif
             @if(session('error'))
-                <div class="alert alert-danger">{{ session('error') }}</div>
+            <div class="alert alert-danger">{{ session('error') }}</div>
             @endif
-            
+
             {{-- firmas para jefe de departamento --}}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white py-3">
@@ -60,7 +58,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <hr>
                     <h6 class="fw-bold">Agregar nuevo</h6>
                     <form id="formJefe" class="row g-2" onsubmit="event.preventDefault(); agregarFirma('jefe_departamento')">
@@ -76,7 +74,7 @@
                     </form>
                 </div>
             </div>
-            
+
             {{-- firmas para coordinador de tutoria --}}
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white py-3">
@@ -107,7 +105,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <hr>
                     <h6 class="fw-bold">Agregar nuevo</h6>
                     <form id="formCoordinador" class="row g-2" onsubmit="event.preventDefault(); agregarFirma('coordinador_tutoria')">
@@ -123,54 +121,64 @@
                     </form>
                 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
 
 <script>
-const csrfToken = '{{ csrf_token() }}';
+    const csrfToken = '{{ csrf_token() }}';
 
-async function agregarFirma(tipo) {
-    let nombre, cargo;
-    if (tipo === 'jefe_departamento') {
-        nombre = document.getElementById('nombre_jefe').value;
-        cargo = document.getElementById('cargo_jefe').value;
-    } else {
-        nombre = document.getElementById('nombre_coordinador').value;
-        cargo = document.getElementById('cargo_coordinador').value;
-    }
-    
-    if (!nombre || !cargo) return;
-    
-    const response = await fetch('{{ route("firmas.store") }}', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify({ tipo, nombre, cargo })
-    });
-    
-    const data = await response.json();
-    if (data.success) {
-        location.reload();
-    } else {
-        alert('Error al guardar');
-    }
-}
+    async function agregarFirma(tipo) {
+        let nombre, cargo;
+        if (tipo === 'jefe_departamento') {
+            nombre = document.getElementById('nombre_jefe').value;
+            cargo = document.getElementById('cargo_jefe').value;
+        } else {
+            nombre = document.getElementById('nombre_coordinador').value;
+            cargo = document.getElementById('cargo_coordinador').value;
+        }
 
-async function eliminarFirma(id) {
-    if (!confirm('Eliminar esta firma?')) return;
-    
-    const response = await fetch(`/firmas/eliminar/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }
-    });
-    
-    const data = await response.json();
-    if (data.success) {
-        location.reload();
-    } else {
-        alert(data.message || 'Error al eliminar');
+        if (!nombre || !cargo) return;
+
+        const response = await fetch('{{ route("firmas.store") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({
+                tipo,
+                nombre,
+                cargo
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error al guardar');
+        }
     }
-}
+
+    async function eliminarFirma(id) {
+        if (!confirm('Eliminar esta firma?')) return;
+
+        const response = await fetch(`/firmas/eliminar/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Error al eliminar');
+        }
+    }
 </script>
 @endsection

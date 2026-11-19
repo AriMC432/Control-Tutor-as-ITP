@@ -19,33 +19,55 @@ class SoporteController extends Controller
      * DASHBOARD SOPORTE
      */
     public function inicio()
-    {
-        $periodoActivo = DB::table('periodo')->where('activo', 1)->first();
-        return view('soporte.index', compact('periodoActivo'));
-    }
+{
+    $periodoActivo = DB::table('periodo')
+        ->where('activo', 1)
+        ->first();
+
+    $idUsuario = session('user_id');
+
+    $usuario = Docente::findOrFail($idUsuario);
+
+    return view('soporte.index', compact(
+        'periodoActivo',
+        'usuario'
+    ));
+}
 
     // ==========================================
     // 1. GESTIÓN DE ALUMNOS
     // ==========================================
 
     public function alta_alumno()
-    {
-        $carreras = Carrera::all();
-        $generaciones = Generacion::all();
+{
+    $carreras = Carrera::all();
 
-        // Filtro por Periodo Activo
-        $periodoActual = Periodo::where('activo', 1)->first();
+    $generaciones = Generacion::all();
 
-        if ($periodoActual) {
-            $grupos = Grupo::where('id_periodo', $periodoActual->id_periodo)
-                ->with(['carrera', 'generacion'])
-                ->get();
-        } else {
-            $grupos = collect();
-        }
+    // Obtener periodo activo
+    $periodoActual = Periodo::where('activo', 1)->first();
 
-        return view('soporte.alumnos', compact('carreras', 'generaciones', 'grupos'));
+    if ($periodoActual) {
+
+        $grupos = Grupo::where(
+            'id_periodo',
+            $periodoActual->id_periodo
+        )
+        ->with(['carrera', 'generacion'])
+        ->get();
+
+    } else {
+
+        $grupos = collect();
     }
+
+    return view('soporte.alumnos', compact(
+        'carreras',
+        'generaciones',
+        'grupos',
+        'periodoActual'
+    ));
+}
 
     public function guardar_alumno(Request $request)
     {

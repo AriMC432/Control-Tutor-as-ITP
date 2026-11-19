@@ -22,8 +22,8 @@ $userRole = session('user_role');
 @section('content')
 <div class="container py-4">
     <div class="row justify-content-center">
+        
         <div class="col-md-10">
-
             {{-- mensajes de feedback --}}
             @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -144,6 +144,7 @@ $userRole = session('user_role');
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th>Anexo</th>
                                     <th>Periodo</th>
                                     <th>Vista previa</th>
                                     <th>Subido por</th>
@@ -155,13 +156,27 @@ $userRole = session('user_role');
                             <tbody>
                                 @foreach($historial as $item)
                                 <tr>
-                                    <td>{{ $item->periodo ? $item->periodo->nombre : 'Global' }}</td>
-                                    <td>
-                                        <img src="{{ asset('storage/' . $item->ruta_imagen) }}"
-                                            alt="preview"
-                                            style="width: 60px; height: 30px; object-fit: cover;"
-                                            class="border rounded">
-                                    </td>
+    {{-- Indica qué anexo corresponde al encabezado --}}
+    <td>
+        @if($item->tipo_reporte == 'anexo19')
+            Anexo 19
+        @elseif($item->tipo_reporte == 'anexo20')
+            Anexo 20
+        @else
+            -
+        @endif
+    </td>
+
+    {{-- Periodo al que pertenece el encabezado --}}
+    <td>{{ $item->periodo ? $item->periodo->nombre : 'Global' }}</td>
+
+    {{-- Vista previa de la imagen --}}
+    <td>
+        <img src="{{ asset('storage/' . $item->ruta_imagen) }}"
+             alt="preview"
+             style="width:60px;height:30px;object-fit:cover;"
+             class="border rounded">
+    </td>
                                     <td>{{ $item->subido_por_rol }}</td>
                                     <td>{{ $item->created_at->format('d/m/y H:i') }}</td>
                                     <td>
